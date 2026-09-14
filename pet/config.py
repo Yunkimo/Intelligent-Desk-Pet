@@ -55,3 +55,14 @@ class Settings:
         # 路径统一解析为绝对路径
         self.assets_dir: Path = BASE_DIR / data.get("assets_dir", "assets")
         self.history_path: Path = BASE_DIR / data.get("history_path", "data/history.json")
+
+    def update_frames(self, frames: list[str]) -> None:
+        """更新形象帧列表并写回 config.json，使更换在重启后仍然生效。"""
+        self.frames = frames
+        path = BASE_DIR / "config.json"
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            data = {}
+        data["frames"] = frames
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")

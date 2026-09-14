@@ -1,32 +1,87 @@
-"""宠物形象：加载图片帧做空闲/眨眼动画；无素材时画一个占位小猫。"""
+"""宠物形象：加载图片帧做空闲/眨眼动画；支持 GIF/WebP 动图；无素材时画一个占位小猫。"""
 
 from pathlib import Path
 
-from PyQt6.QtCore import QPointF, Qt, QTimer
-from PyQt6.QtGui import QColor, QPainter, QPen, QPixmap, QPolygonF
+from PyQt6.QtCore import QPointF, QSize, Qt, QTimer
+from PyQt6.QtGui import QColor, QImageReader, QMovie, QPainter, QPen, QPixmap, QPolygonF
 from PyQt6.QtWidgets import QLabel
 
 
 class PetSprite(QLabel):
+    _ANIMATED_EXTS = {".gif", ".webp"}
+
     def __init__(self, assets_dir: Path, frame_names: list[str], target_size: int,
                  interval_ms: int = 450, parent=None) -> None:
         super().__init__(parent)
         self.target_size = target_size
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setFixedSize(target_size, target_size)
+
+        # 若 frames 里指定了 GIF/WebP 动图，则用 QMovie 播放
+        self._movie: QMovie | None = None
+        self._timer: QTimer | None = None
+        self.frames: list[QPixmap] = []
+        animated = self._find_animated(assets_dir, frame_names)
+        if animated is not None:
+            self._setup_movie(animated, target_size)
+            return
 
         self.frames: list[QPixmap] = self._load_frames(assets_dir, frame_names, target_size)
         if not self.frames:
             self.frames = [self._placeholder(target_size)]
+        self.setFixedSize(self.frames[0].size())
 
         self._idx = 0
         self.setPixmap(self.frames[0])
 
-        self._timer: QTimer | None = None
         if len(self.frames) > 1:
             self._timer = QTimer(self)
             self._timer.timeout.connect(self._advance)
             self._timer.start(interval_ms)
+
+    def set_image(self, path: Path, size: int) -> None:
+        """运行时更换形象：动图走 QMovie，静态图走 QPixmap。"""
+        if self._movie is not None:
+            self._movie.stop()
+            self._movie = None
+        if self._timer is not None:
+            self._timer.stop()
+            self._timer = None
+        self.setMovie(None)
+        self.setPixmap(QPixmap())
+        self.frames = []
+        self._idx = 0
+
+        if path.suffix.lower() in self._ANIMATED_EXTS:
+            self._setup_movie(path, size)
+            return
+
+        self.frames = self._load_frames(path.parent, [path.name], size)
+        if not self.frames:
+            self.frames = [self._placeholder(size)]
+        self.setFixedSize(self.frames[0].size())
+        self.setPixmap(self.frames[0])
+
+    @staticmethod
+    def _find_animated(assets_dir: Path, names: list[str]) -> Path | None:
+        for name in names:
+            path = assets_dir / name
+            if not path.exists():
+                continue
+            if (
+                Path(name).suffix.lower() in PetSprite._ANIMATED_EXTS
+                and QImageReader(str(path)).imageCount() > 1
+            ):
+                return path
+        return None
+
+    def _setup_movie(self, path: Path, size: int) -> None:
+        self._movie = QMovie(str(path), parent=self)
+        orig = QImageReader(str(path)).size()
+        scaled = orig.scaled(QSize(size, size), Qt.AspectRatioMode.KeepAspectRatio)
+        self._movie.setScaledSize(scaled)
+        self.setFixedSize(scaled)
+        self.setMovie(self._movie)
+        self._movie.start()
 
     def _load_frames(self, assets_dir: Path, names: list[str], size: int) -> list[QPixmap]:
         frames: list[QPixmap] = []

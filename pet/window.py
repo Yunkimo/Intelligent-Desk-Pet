@@ -1,11 +1,13 @@
 """宠物主窗口：无边框/置顶/透明，组合形象、气泡、输入框，编排聊天与语音。"""
 
 import os
+import shutil
+from pathlib import Path
 
 from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtGui import QGuiApplication
 from PyQt6.QtMultimedia import QAudioOutput, QMediaPlayer
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtWidgets import QFileDialog, QMenu, QWidget
 
 from .asr import ASREngine
 from .bubble import SpeechBubble
@@ -40,6 +42,7 @@ class PetWindow(QWidget):
 
         self._init_window()
         self._init_children()
+        self._size_and_position()
         self._init_audio()
 
         # 拖拽/点击状态
@@ -62,19 +65,10 @@ class PetWindow(QWidget):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
-        s = self.settings.sprite_size
-        self.win_w = max(320, s + 120)
-        self.win_h = s + _INPUT_H + _BUBBLE_RESERVE + _GAP * 4
-        self.resize(self.win_w, self.win_h)
-
-        screen = QGuiApplication.primaryScreen()
-        if screen:
-            geo = screen.availableGeometry()
-            self.move(geo.right() - self.win_w - 40, geo.bottom() - self.win_h - 40)
-
     def _init_children(self) -> None:
-        s = self.settings.sprite_size
-        self.sprite = PetSprite(self.settings.assets_dir, self.settings.frames, s, parent=self)
+        self.sprite = PetSprite(
+            self.settings.assets_dir, self.settings.frames, self.settings.sprite_size, parent=self
+        )
         self.bubble = SpeechBubble(self.settings.bubble_timeout_ms, parent=self)
         self.input = ChatInput(parent=self)
         self.input.hide()
@@ -83,8 +77,6 @@ class PetWindow(QWidget):
         self.input.mic_toggled.connect(self.on_mic_toggled)
         self.bubble.resized.connect(self._position_bubble)
 
-        self._layout_children()
-
     def _init_audio(self) -> None:
         self.player = QMediaPlayer(self)
         self.audio_out = QAudioOutput(self)
@@ -92,14 +84,29 @@ class PetWindow(QWidget):
         self.audio_out.setVolume(1.0)
         self.player.mediaStatusChanged.connect(self._on_media_status)
 
+    def _size_and_position(self) -> None:
+        sw = self.sprite.width()
+        sh = self.sprite.height()
+        self.win_w = max(320, sw + 120)
+        self.win_h = sh + _INPUT_H + _BUBBLE_RESERVE + _GAP * 4
+        self.resize(self.win_w, self.win_h)
+
+        screen = QGuiApplication.primaryScreen()
+        if screen:
+            geo = screen.availableGeometry()
+            self.move(geo.right() - self.win_w - 40, geo.bottom() - self.win_h - 40)
+
+        self._layout_children()
+
     def _layout_children(self) -> None:
-        s = self.settings.sprite_size
-        sx = (self.width() - s) // 2
-        sy = self.height() - s - _INPUT_H - _GAP * 2
-        self.sprite.setGeometry(sx, sy, s, s)
+        sw = self.sprite.width()
+        sh = self.sprite.height()
+        sx = (self.width() - sw) // 2
+        sy = self.height() - sh - _INPUT_H - _GAP * 2
+        self.sprite.setGeometry(sx, sy, sw, sh)
 
         ix = (self.width() - self.input.width()) // 2
-        iy = sy + s + _GAP
+        iy = sy + sh + _GAP
         self.input.move(ix, iy)
 
         self._position_bubble()
@@ -137,6 +144,53 @@ class PetWindow(QWidget):
         else:
             self.input.show()
             self.input.focus_input()
+
+    # ---------- 更换形象 ----------
+    def contextMenuEvent(self, event) -> None:  # noqa: N802
+        menu = QMenu(self)
+        change = menu.addAction("更换形象…")
+        quit_act = menu.addAction("退出")
+        chosen = menu.exec(event.globalPos())
+        if chosen == change:
+            self._choose_image()
+        elif chosen == quit_act:
+            self.close()
+
+    def _choose_image(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self, "选择桌宠形象", "",
+            "图片 (*.png *.jpg *.jpeg *.gif *.webp *.bmp)",
+        )
+        if not path:
+            return
+        self._apply_image(Path(path))
+
+    def _apply_image(self, src: Path) -> None:
+        dest = self._normalize_image(src)
+        self.settings.update_frames([dest.name])
+        self.sprite.set_image(dest, self.settings.sprite_size)
+        self._size_and_position()
+
+    def _normalize_image(self, src: Path) -> Path:
+        """把用户选中的图统一转成 Qt 能稳定读取的格式，复制进 assets/ 并返回路径。"""
+        from PIL import Image
+
+        im = Image.open(src)
+        if getattr(im, "is_animated", False):
+            ext = src.suffix.lower() or ".gif"
+            dest = self.settings.assets_dir / f"custom{ext}"
+            shutil.copyfile(src, dest)
+        else:
+            im = self._trim_transparent(im.convert("RGBA"))
+            dest = self.settings.assets_dir / "custom.webp"
+            im.save(dest, lossless=True)
+        return dest
+
+    @staticmethod
+    def _trim_transparent(im):
+        """裁掉四周全透明边，让形象更贴合、显示更大。"""
+        bbox = im.getchannel("A").getbbox()
+        return im.crop(bbox) if bbox else im
 
     # ---------- 文本/聊天 ----------
     def send_text(self, text: str) -> None:
