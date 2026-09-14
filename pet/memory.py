@@ -30,6 +30,10 @@ class Memory:
         self.messages = [m for m in self.messages if m.get("role") != "system"]
         self.messages.insert(0, {"role": "system", "content": prompt})
 
+    def clear_history(self) -> None:
+        """清空对话历史，仅保留系统提示词（切换人设时避免旧人设语气残留）。"""
+        self.messages = [m for m in self.messages if m.get("role") == "system"]
+
     def add_user(self, text: str) -> None:
         self.messages.append({"role": "user", "content": text})
 

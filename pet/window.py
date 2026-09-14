@@ -200,6 +200,7 @@ class PetWindow(QWidget):
         if not self.settings.switch_persona(name):
             return
         self.memory.set_system(build_system_prompt(self.settings))
+        self.memory.clear_history()  # 清空旧人设对话，避免语气/身份残留
         self.setWindowTitle(self.settings.pet_name)
         self.bubble.set_text(f"人设已切换为「{name}」")
 
