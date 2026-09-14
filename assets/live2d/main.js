@@ -32,9 +32,6 @@ window.addEventListener('unhandledrejection', function (e) {
     app.stage.addChild(model);
     model.autoInteract = true; // 眨眼 / 视线跟随 / 物理
 
-    // 初始化：播一次「Start」动作，展开秋千并归位参数
-    try { await model.motion('Start', 0); } catch (e) {}
-
     function layout() {
       var w = model.width || 1;
       var h = model.height || 1;
