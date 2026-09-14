@@ -26,6 +26,7 @@ def test_config_json_fields():
     s = Settings()
     assert s.pet_name == "昔涟"
     assert s.image_engine == "live2d"
+    assert s.live2d_model == "cyrene"
     assert s.whisper_model == "base"
     assert s.tts_voice == "zh-CN-XiaoyouNeural"
     assert s.max_history > 0

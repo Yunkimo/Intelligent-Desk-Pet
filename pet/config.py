@@ -48,6 +48,7 @@ class Settings:
         self.image_engine: str = data.get("image_engine", "sprite")
         self.live2d_width: int = int(data.get("live2d_width", 360))
         self.live2d_height: int = int(data.get("live2d_height", 360))
+        self.live2d_model: str = data.get("live2d_model", "cyrene")
 
         self.whisper_model: str = data.get("whisper_model", "base")
         self.tts_voice: str = data.get("tts_voice", "zh-CN-XiaoyouNeural")
@@ -83,6 +84,11 @@ class Settings:
         """切换形象引擎并写回 config.json，使切换在重启后仍然生效。"""
         self.image_engine = engine
         self._save_json(image_engine=engine)
+
+    def update_live2d_model(self, name: str) -> None:
+        """切换 Live2D 模型并写回 config.json，使切换在重启后仍然生效。"""
+        self.live2d_model = name
+        self._save_json(live2d_model=name)
 
     def switch_persona(self, name: str) -> bool:
         """切换到指定人设（从 personas 预设读取），写回 config.json 并返回是否成功。"""

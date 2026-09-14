@@ -93,6 +93,7 @@ python scripts/build_exe.py
 - **记忆**：对话历史保存在 `data/history.json`，重启后仍在（可在 `config.json` 关闭）
 - **右键菜单**：更换形象（选图片自动切到图片/动图引擎）/ 切换人设 / 退出
 - **Live2D**：右键「逗一下 ♪」触发随机动作、「切换表情」换表情；说话播报时模型自动做动作，待机动作循环；图片模式下可「切换为 Live2D 动态形象」切回
+- **多模型**：右键「切换模型」在已导入的 Live2D 模型间切换；「添加 Live2D 模型…」弹出导入窗口，选择本地 Cubism 4 模型文件夹即拷入 `assets/live2d/` 并切换
 
 ## 自定义
 
@@ -101,6 +102,7 @@ python scripts/build_exe.py
 | 宠物名字 / 人设 | `config.json` 的 `pet_name`、`persona` |
 | 宠物形象 | 图片放进 `assets/`，更新 `config.json` 的 `frames`（见 `assets/README.md`） |
 | 形象引擎 | `config.json` 的 `image_engine`：`live2d`（动态模型）或 `sprite`（图片/动图） |
+| Live2D 模型 | `config.json` 的 `live2d_model`，或右键「切换模型」/「添加 Live2D 模型…」 |
 | 音色 | `config.json` 的 `tts_voice` / `tts_rate` / `tts_pitch` |
 | 语音识别精度 | `config.json` 的 `whisper_model`（`base`/`small`/`medium`） |
 | 关闭语音播报 | `config.json` 的 `enable_voice` 设为 `false` |

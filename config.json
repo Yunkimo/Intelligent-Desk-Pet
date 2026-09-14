@@ -15,10 +15,11 @@
     }
   },
   "frames": [
-    "cyrene.webp"
+    "custom.gif"
   ],
   "sprite_size": 300,
   "image_engine": "live2d",
+  "live2d_model": "cyrene",
   "whisper_model": "base",
   "tts_voice": "zh-CN-XiaoyouNeural",
   "tts_rate": "+10%",

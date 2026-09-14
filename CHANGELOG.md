@@ -2,6 +2,13 @@
 
 本项目遵循[语义化版本](https://semver.org/lang/zh-CN/)与 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/) 规范。
 
+## [未发布]
+
+### 新增
+
+- 支持导入与切换任意 Live2D（Cubism 4）模型：右键菜单新增「切换模型」子菜单与「添加 Live2D 模型…」导入窗口，选择本地模型文件夹即拷入 `assets/live2d/` 并一键切换。
+- 模型加载、动作组、表情名改为从模型元数据动态发现，不再硬编码昔涟；`config.json` 新增 `live2d_model` 字段记录当前模型。
+
 ## [1.3.0] - 2026-09-14
 
 ### 新增

@@ -164,10 +164,17 @@ class PetWindow(QWidget):
         if self.avatar.supports_motion:
             poke = menu.addAction("逗一下 ♪")
             poke.triggered.connect(lambda: self.avatar.react("poke"))
+
             expr_menu = menu.addMenu("切换表情")
             for name in self.avatar.expressions:
                 act = expr_menu.addAction(name)
                 act.triggered.connect(lambda _checked=False, n=name: self.avatar.set_expression(n))
+
+            model_menu = menu.addMenu("切换模型")
+            self._populate_model_menu(model_menu)
+            model_menu.addSeparator()
+            add_model = model_menu.addAction("添加 Live2D 模型…")
+            add_model.triggered.connect(self._add_live2d_model)
         else:
             to_live2d = menu.addAction("切换为 Live2D 动态形象")
             to_live2d.triggered.connect(lambda: self._switch_engine("live2d"))
@@ -229,7 +236,10 @@ class PetWindow(QWidget):
         if engine == self.settings.image_engine:
             return
         self.settings.update_image_engine(engine)
+        self._rebuild_avatar()
 
+    def _rebuild_avatar(self) -> None:
+        """销毁旧形象控件，按当前配置重建并重新布局。"""
         old = self.avatar.widget
         old.hide()
         old.setParent(None)
@@ -238,6 +248,39 @@ class PetWindow(QWidget):
         self.avatar = create_avatar(self.settings, parent=self)
         self.avatar.widget.show()
         self._size_and_position()
+
+    def _populate_model_menu(self, menu: QMenu) -> None:
+        """往「切换模型」子菜单填充已发现的 Live2D 模型，勾选当前项。"""
+        from .live2d_view import discover_models
+
+        for m in discover_models():
+            act = menu.addAction(m["name"])
+            act.setCheckable(True)
+            act.setChecked(m["name"] == self.settings.live2d_model)
+            act.triggered.connect(
+                lambda _checked=False, n=m["name"]: self._switch_live2d_model(n)
+            )
+
+    def _switch_live2d_model(self, name: str) -> None:
+        """切换到指定 Live2D 模型并重建形象。"""
+        if name == self.settings.live2d_model:
+            return
+        self.settings.update_live2d_model(name)
+        self._rebuild_avatar()
+
+    def _add_live2d_model(self) -> None:
+        """弹出「添加 Live2D 模型」对话框，导入成功后切换到新模型。"""
+        from .live2d_dialog import AddModelDialog
+
+        dialog = AddModelDialog(self)
+        if not dialog.exec() or not dialog.model_name:
+            return
+        self.settings.update_live2d_model(dialog.model_name)
+        if self.settings.image_engine != "live2d":
+            self._switch_engine("live2d")
+        else:
+            self._rebuild_avatar()
+        self.bubble.set_text(f"已添加并切换到「{dialog.model_name}」模型 ♪")
 
     def _normalize_image(self, src: Path) -> Path:
         """把用户选中的图统一转成 Qt 能稳定读取的格式，复制进 assets/ 并返回路径。"""
