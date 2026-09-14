@@ -7,9 +7,10 @@ from pathlib import Path
 from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtGui import QGuiApplication
 from PyQt6.QtMultimedia import QAudioOutput, QMediaPlayer
-from PyQt6.QtWidgets import QFileDialog, QMenu, QWidget
+from PyQt6.QtWidgets import QFileDialog, QInputDialog, QMenu, QWidget
 
 from .asr import ASREngine
+from .avatar import create_avatar
 from .bubble import SpeechBubble
 from .config import Settings
 from .input_box import ChatInput
@@ -17,7 +18,6 @@ from .llm import LLMClient
 from .memory import Memory
 from .persona import build_system_prompt
 from .providers import create_chat_provider
-from .sprite import PetSprite
 from .tts import TTSEngine
 from .worker import ASRWorker, ChatWorker, TTSWorker
 
@@ -66,9 +66,7 @@ class PetWindow(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
     def _init_children(self) -> None:
-        self.sprite = PetSprite(
-            self.settings.assets_dir, self.settings.frames, self.settings.sprite_size, parent=self
-        )
+        self.avatar = create_avatar(self.settings, parent=self)
         self.bubble = SpeechBubble(self.settings.bubble_timeout_ms, parent=self)
         self.input = ChatInput(parent=self)
         self.input.hide()
@@ -85,8 +83,8 @@ class PetWindow(QWidget):
         self.player.mediaStatusChanged.connect(self._on_media_status)
 
     def _size_and_position(self) -> None:
-        sw = self.sprite.width()
-        sh = self.sprite.height()
+        sw = self.avatar.widget.width()
+        sh = self.avatar.widget.height()
         self.win_w = max(320, sw + 120)
         self.win_h = sh + _INPUT_H + _BUBBLE_RESERVE + _GAP * 4
         self.resize(self.win_w, self.win_h)
@@ -99,11 +97,11 @@ class PetWindow(QWidget):
         self._layout_children()
 
     def _layout_children(self) -> None:
-        sw = self.sprite.width()
-        sh = self.sprite.height()
+        sw = self.avatar.widget.width()
+        sh = self.avatar.widget.height()
         sx = (self.width() - sw) // 2
         sy = self.height() - sh - _INPUT_H - _GAP * 2
-        self.sprite.setGeometry(sx, sy, sw, sh)
+        self.avatar.widget.setGeometry(sx, sy, sw, sh)
 
         ix = (self.width() - self.input.width()) // 2
         iy = sy + sh + _GAP
@@ -115,7 +113,7 @@ class PetWindow(QWidget):
         if not self.bubble.isVisible():
             return
         bx = (self.width() - self.bubble.width()) // 2
-        by = self.sprite.y() - self.bubble.height() - _GAP
+        by = self.avatar.widget.y() - self.bubble.height() - _GAP
         self.bubble.move(max(0, bx), max(0, by))
 
     # ---------- 拖拽与点击 ----------
@@ -145,16 +143,54 @@ class PetWindow(QWidget):
             self.input.show()
             self.input.focus_input()
 
-    # ---------- 更换形象 ----------
+    # ---------- 更换形象 / 切换人设 ----------
     def contextMenuEvent(self, event) -> None:  # noqa: N802
         menu = QMenu(self)
-        change = menu.addAction("更换形象…")
+
+        if self.avatar.supports_appearance:
+            change = menu.addAction("更换形象…")
+            change.triggered.connect(self._choose_image)
+
+        if self.avatar.supports_motion:
+            poke = menu.addAction("逗一下 ♪")
+            poke.triggered.connect(lambda: self.avatar.react("poke"))
+            expr_menu = menu.addMenu("切换表情")
+            for name in self.avatar.expressions:
+                act = expr_menu.addAction(name)
+                act.triggered.connect(lambda _checked=False, n=name: self.avatar.set_expression(n))
+
+        persona_menu = menu.addMenu("切换人设")
+        for name in self.settings.personas:
+            act = persona_menu.addAction(name)
+            act.triggered.connect(lambda _checked=False, n=name: self._switch_persona(n))
+        persona_menu.addSeparator()
+        add_act = persona_menu.addAction("添加人设…")
+        add_act.triggered.connect(self._add_persona)
+
         quit_act = menu.addAction("退出")
-        chosen = menu.exec(event.globalPos())
-        if chosen == change:
-            self._choose_image()
-        elif chosen == quit_act:
-            self.close()
+        quit_act.triggered.connect(self.close)
+
+        menu.exec(event.globalPos())
+
+    def _switch_persona(self, name: str) -> None:
+        if not self.settings.switch_persona(name):
+            return
+        self.memory.set_system(build_system_prompt(self.settings))
+        self.setWindowTitle(self.settings.pet_name)
+        self.bubble.set_text(f"人设已切换为「{name}」")
+
+    def _add_persona(self) -> None:
+        name, ok = QInputDialog.getText(self, "添加人设", "人设名字：")
+        if not ok or not name.strip():
+            return
+        personality, ok = QInputDialog.getMultiLineText(self, "添加人设", f"「{name}」的性格描述：")
+        if not ok:
+            return
+        tone, ok = QInputDialog.getMultiLineText(self, "添加人设", f"「{name}」的说话语气：")
+        if not ok:
+            return
+        if self.settings.add_persona(name, personality, tone):
+            self._switch_persona(name)
 
     def _choose_image(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -168,7 +204,7 @@ class PetWindow(QWidget):
     def _apply_image(self, src: Path) -> None:
         dest = self._normalize_image(src)
         self.settings.update_frames([dest.name])
-        self.sprite.set_image(dest, self.settings.sprite_size)
+        self.avatar.set_appearance(dest, self.settings.sprite_size)
         self._size_and_position()
 
     def _normalize_image(self, src: Path) -> Path:
@@ -232,6 +268,7 @@ class PetWindow(QWidget):
         self._tts_tmp = path
         self.player.setSource(QUrl.fromLocalFile(path))
         self.player.play()
+        self.avatar.react("speak")
 
     def _on_media_status(self, status) -> None:
         if status == QMediaPlayer.MediaStatus.EndOfMedia:

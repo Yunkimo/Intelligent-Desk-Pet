@@ -4,9 +4,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 
-一个 Windows 桌面宠物：可拖拽、置顶、透明的可爱形象，支持 **文字聊天** 和 **双向语音对话**（你说它听、它说给你听），带人设与跨会话记忆。
+一个 Windows 桌面宠物：可拖拽、置顶、透明的可爱形象（支持 **Live2D 动态模型** 与图片/GIF 两种引擎），支持 **文字聊天** 和 **双向语音对话**（你说它听、它说给你听），带人设与跨会话记忆。
 
 - **GUI**：PyQt6（无边框 / 置顶 / 透明窗口）
+- **形象**：Live2D（Cubism 4）动态模型，或图片 / GIF 精灵，`config.json` 一键切换
 - **对话**：DeepSeek（OpenAI 兼容协议，可换任意国内 API）
 - **语音合成 TTS**：edge-tts（免费、无需密钥、可爱动漫音色）
 - **语音识别 ASR**：本地 faster-whisper（离线）
@@ -68,6 +69,8 @@ python scripts/smoke_test.py tts   # 验证语音合成
 - **说话**：点输入框右侧 🎤 开始录音（变 ⏹），再点停止即转写并发送
 - **回复**：气泡流式显示，宠物同时用语音播报
 - **记忆**：对话历史保存在 `data/history.json`，重启后仍在（可在 `config.json` 关闭）
+- **右键菜单**：更换形象 / 切换人设 / 退出
+- **Live2D**：右键「逗一下 ♪」触发随机动作、「切换表情」换表情；说话播报时模型自动做动作，待机动作循环
 
 ## 自定义
 
@@ -75,6 +78,7 @@ python scripts/smoke_test.py tts   # 验证语音合成
 |---|---|
 | 宠物名字 / 人设 | `config.json` 的 `pet_name`、`persona` |
 | 宠物形象 | 图片放进 `assets/`，更新 `config.json` 的 `frames`（见 `assets/README.md`） |
+| 形象引擎 | `config.json` 的 `image_engine`：`live2d`（动态模型）或 `sprite`（图片/动图） |
 | 音色 | `config.json` 的 `tts_voice` / `tts_rate` / `tts_pitch` |
 | 语音识别精度 | `config.json` 的 `whisper_model`（`base`/`small`/`medium`） |
 | 关闭语音播报 | `config.json` 的 `enable_voice` 设为 `false` |
@@ -84,8 +88,8 @@ python scripts/smoke_test.py tts   # 验证语音合成
 
 ```
 main.py            入口
-pet/               应用代码（config/window/sprite/bubble/llm/asr/tts/worker/memory/persona）
-assets/            宠物素材
+pet/               应用代码（config/window/avatar/sprite/bubble/llm/asr/tts/worker/memory/persona/live2d_view）
+assets/            宠物素材（live2d/ 为 Cubism 模型与前端运行时）
 scripts/           冒烟测试脚本
 config.json        非敏感配置
 .env               密钥（不提交）
@@ -96,7 +100,7 @@ config.json        非敏感配置
 系统按「配置 / 引擎（后端）/ 线程 / UI / 记忆」分层，后端与前端解耦。重构中应用了 5 种设计模式：
 
 - **适配器 Adapter**：`LLMClient` / `TTSEngine` / `ASREngine` 隔离 OpenAI、edge-tts、faster-whisper 三方库
-- **策略 Strategy + 工厂 Factory**：`ChatProvider` / `create_chat_provider` 抽象 LLM 提供者，可换任意 OpenAI 兼容服务
+- **策略 Strategy + 工厂 Factory**：`ChatProvider` / `create_chat_provider` 抽象 LLM 提供者；`Avatar` / `create_avatar` 抽象形象引擎（图片精灵 / Live2D），可换任意后端
 - **观察者 Observer**：Qt 信号/槽让后台线程与 UI 解耦，UI 永不阻塞
 - **外观 Facade**：`PetWindow` 对外提供极简操作
 
@@ -117,12 +121,25 @@ config.json        非敏感配置
 | 依赖 | 许可证 | 用途 |
 |---|---|---|
 | PyQt6 | GPL-3.0 / 商业 | GUI |
+| PyQt6-WebEngine | GPL-3.0 / 商业 | Live2D 渲染（可选） |
 | openai | Apache-2.0 | LLM 调用 |
 | edge-tts | LGPL-3.0 | 语音合成 |
 | faster-whisper | MIT | 语音识别 |
 | sounddevice | MIT | 录音 |
 | python-dotenv | BSD-3-Clause | 配置 |
 | numpy | BSD-3-Clause | 数值处理 |
+
+### Live2D 前端运行时与模型
+
+`assets/live2d/` 内含渲染 Live2D 模型所需的前端运行时与第三方模型：
+
+| 组件 | 许可证 | 说明 |
+|---|---|---|
+| pixi.js | MIT | 2D 渲染引擎 |
+| pixi-live2d-display | MIT | Live2D 渲染插件（Cubism 4） |
+| Cubism Core（live2dcubismcore.min.js） | Live2D 专有许可 | 模型运行时核心 |
+
+> ⚠️ **模型版权**：`assets/live2d/cyrene/` 为「昔涟」角色的第三方 Live2D 模型，提取自开源项目 Cyrene-Agent，**非本仓库原创**。本项目仅用于课程设计 / 学习演示；如需商用或公开分发，请自行确认角色形象版权与模型使用授权。
 
 ## 常见问题
 
