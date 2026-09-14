@@ -1,7 +1,6 @@
 """宠物主窗口：无边框/置顶/透明，组合形象、气泡、输入框，编排聊天与语音。"""
 
 import os
-import shutil
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QUrl
@@ -13,6 +12,7 @@ from .asr import ASREngine
 from .avatar import create_avatar
 from .bubble import SpeechBubble
 from .config import Settings
+from .image_utils import normalize_image
 from .input_box import ChatInput
 from .llm import LLMClient
 from .memory import Memory
@@ -223,7 +223,9 @@ class PetWindow(QWidget):
 
     def _apply_image(self, src: Path) -> None:
         """更换形象：用图片/动图引擎显示所选图片（必要时先从 Live2D 切过来）。"""
-        dest = self._normalize_image(src)
+        # 先释放当前形象对图片文件的占用，避免覆盖正在显示的 custom.* 时锁文件崩溃
+        self.avatar.clear()
+        dest = normalize_image(src, self.settings.assets_dir)
         self.settings.update_frames([dest.name])
         if self.settings.image_engine != "sprite":
             self._switch_engine("sprite")  # 会按新 frames 重建并布局
@@ -281,27 +283,6 @@ class PetWindow(QWidget):
         else:
             self._rebuild_avatar()
         self.bubble.set_text(f"已添加并切换到「{dialog.model_name}」模型 ♪")
-
-    def _normalize_image(self, src: Path) -> Path:
-        """把用户选中的图统一转成 Qt 能稳定读取的格式，复制进 assets/ 并返回路径。"""
-        from PIL import Image
-
-        im = Image.open(src)
-        if getattr(im, "is_animated", False):
-            ext = src.suffix.lower() or ".gif"
-            dest = self.settings.assets_dir / f"custom{ext}"
-            shutil.copyfile(src, dest)
-        else:
-            im = self._trim_transparent(im.convert("RGBA"))
-            dest = self.settings.assets_dir / "custom.webp"
-            im.save(dest, lossless=True)
-        return dest
-
-    @staticmethod
-    def _trim_transparent(im):
-        """裁掉四周全透明边，让形象更贴合、显示更大。"""
-        bbox = im.getchannel("A").getbbox()
-        return im.crop(bbox) if bbox else im
 
     # ---------- 文本/聊天 ----------
     def send_text(self, text: str) -> None:

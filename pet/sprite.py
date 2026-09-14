@@ -38,8 +38,8 @@ class PetSprite(QLabel):
             self._timer.timeout.connect(self._advance)
             self._timer.start(interval_ms)
 
-    def set_image(self, path: Path, size: int) -> None:
-        """运行时更换形象：动图走 QMovie，静态图走 QPixmap。"""
+    def clear(self) -> None:
+        """停掉动图与帧动画并清空，释放对当前图片文件的占用。"""
         if self._movie is not None:
             self._movie.stop()
             self._movie = None
@@ -50,6 +50,10 @@ class PetSprite(QLabel):
         self.setPixmap(QPixmap())
         self.frames = []
         self._idx = 0
+
+    def set_image(self, path: Path, size: int) -> None:
+        """运行时更换形象：动图走 QMovie，静态图走 QPixmap。"""
+        self.clear()
 
         if path.suffix.lower() in self._ANIMATED_EXTS:
             self._setup_movie(path, size)

@@ -32,6 +32,9 @@ class Avatar(ABC):
     def set_appearance(self, path: Path, size: int) -> None:
         """运行时更换形象；仅支持换图的引擎覆写。"""
 
+    def clear(self) -> None:
+        """释放当前形象占用的资源（图片文件句柄等）；无资源需释放的引擎保持空实现。"""
+
     def set_expression(self, name: str) -> None:
         """切换表情；仅 Live2D 覆写。"""
 
@@ -55,6 +58,9 @@ class SpriteAvatar(Avatar):
     def set_appearance(self, path: Path, size: int) -> None:
         self._size = size
         self.widget.set_image(path, size)  # type: ignore[attr-defined]
+
+    def clear(self) -> None:
+        self.widget.clear()  # type: ignore[attr-defined]
 
 
 class Live2DAvatar(Avatar):
