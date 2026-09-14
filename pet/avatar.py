@@ -38,6 +38,11 @@ class Avatar(ABC):
     def set_expression(self, name: str) -> None:
         """切换表情；仅 Live2D 覆写。"""
 
+    def tap(self, pos, on_miss=None) -> None:
+        """点击形象：Live2D 命中脸则换表情，未命中回调 on_miss；静态形象直接回调。"""
+        if on_miss is not None:
+            on_miss()
+
 
 class SpriteAvatar(Avatar):
     """图片 / 动图精灵引擎（QLabel + QPixmap / QMovie）。"""
@@ -90,9 +95,17 @@ class Live2DAvatar(Avatar):
         view = self.widget
         if event in ("speak", "poke"):
             view.play_motion()  # type: ignore[attr-defined]
+        elif event == "voice":
+            view.random_expression()  # type: ignore[attr-defined]
 
     def set_expression(self, name: str) -> None:
         self.widget.set_expression(name)  # type: ignore[attr-defined]
+
+    def tap(self, pos, on_miss=None) -> None:
+        # 窗口坐标 → WebView 坐标，交给前端做命中测试（点脸换表情）
+        view = self.widget
+        local = view.mapFromParent(pos)
+        view.tap_at(local.x(), local.y(), on_miss)  # type: ignore[attr-defined]
 
 
 def create_avatar(settings, parent: QWidget | None = None) -> Avatar:

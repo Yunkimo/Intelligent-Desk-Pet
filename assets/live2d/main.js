@@ -1,4 +1,5 @@
-/* 通用 Live2D 渲染（Cubism 4）：模型入口从 URL 参数读取，动作组/表情从模型元数据动态发现。 */
+/* 通用 Live2D 渲染（Cubism 4）：模型入口从 URL 参数读取，动作组/表情从模型元数据动态发现。
+   交互：短待机随机待机动作 → 长时间待机荡秋千；点击模型脸切换表情（自定义识别区 CLICK_ZONES）。 */
 window.__jsErrors = [];
 window.addEventListener('error', function (e) {
   window.__jsErrors.push('error: ' + (e.message || e.type));
@@ -7,6 +8,21 @@ window.addEventListener('unhandledrejection', function (e) {
   var r = e.reason;
   window.__jsErrors.push('rejection: ' + ((r && r.message) || r));
 });
+
+// 超过该时长（毫秒）无交互，待机时改玩荡秋千
+var LONG_IDLE_MS = 12000;
+
+// 自定义点脸识别区：模型局部归一化坐标（0~1，相对模型宽高；0,0 左上角，0.5,0.5 中心）。
+// 完全不用模型自带的 HitAreas（其 ArtMesh 包围盒含大量透明区、判定过大），
+// 这里手动圈定小矩形，精确控制判定位置与大小；想改就改下表。
+var CLICK_ZONES = [
+  { expr: "墨镜",   x: 0.55, y: 0.40, w: 0.08, h: 0.10 },  // 脸（刘海）
+  { expr: "问号",   x: 0.57, y: 0.23, w: 0.07, h: 0.07 },  // 头顶
+  { expr: "闪耀",   x: 0.32, y: 0.39, w: 0.07, h: 0.09 },  // 左侧
+  { expr: "星星眼", x: 0.46, y: 0.59, w: 0.08, h: 0.10 },  // 左下坠饰
+  { expr: "圈圈眼", x: 0.60, y: 0.59, w: 0.06, h: 0.10 },  // 右下坠饰
+  { expr: "开心眼", x: 0.39, y: 0.24, w: 0.07, h: 0.11 },  // 左上叶片
+];
 
 (async function () {
   try {
@@ -31,17 +47,23 @@ window.addEventListener('unhandledrejection', function (e) {
     // 模型入口（相对路径，如 cyrene/Cyrene.model3.json），默认昔涟
     var entry = (new URLSearchParams(location.search)).get('entry') || 'cyrene/Cyrene.model3.json';
 
-    // 从模型元数据发现动作组（供待机/随机动作），避免硬编码某个模型的动作组名
-    var motionGroups = [];
-    var groupSizes = {};
+    // 从模型元数据发现动作组、表情名（避免硬编码某个模型）
+    var motions = {};
+    var expressionNames = [];
     try {
       var meta = await (await fetch(entry)).json();
-      var motions = (meta.FileReferences && meta.FileReferences.Motions) || {};
-      motionGroups = Object.keys(motions);
-      motionGroups.forEach(function (g) { groupSizes[g] = (motions[g] || []).length; });
+      var refs = meta.FileReferences || {};
+      motions = refs.Motions || {};
+      (refs.Expressions || []).forEach(function (e) {
+        if (e && e.Name) expressionNames.push(e.Name);
+      });
     } catch (e) {
       window.__jsErrors.push('meta: ' + ((e && e.message) || e));
     }
+
+    var motionGroups = Object.keys(motions);
+    var groupSizes = {};
+    motionGroups.forEach(function (g) { groupSizes[g] = (motions[g] || []).length; });
 
     var model = await Live2DModel.from(entry);
     app.stage.addChild(model);
@@ -75,30 +97,81 @@ window.addEventListener('unhandledrejection', function (e) {
     });
     if (!action.length) action = fileGroups.slice();
 
-    // 随机播一组动作；skipFirst 时跳过下标 0（Live2D 惯例：第 0 个常是「回正」复位）
-    function pickMotion(groups, skipFirst) {
+    // 荡秋千动作（长时间待机专用）：按动作名定位，兼容不同模型
+    var swingMotion = null;
+    motionGroups.forEach(function (g) {
+      (motions[g] || []).forEach(function (m, i) {
+        if (m && m.File && /秋千|swing/i.test(m.Name || '')) swingMotion = { group: g, index: i };
+      });
+    });
+
+    // 随机播一组动作；skipFirst 跳过下标 0（Live2D 惯例：第 0 个常是「回正」复位），
+    // exclude 用于把荡秋千从短待机里剔除，让它成为「长时间待机」专属动作。
+    function pickMotion(groups, skipFirst, exclude) {
       if (!groups.length) return Promise.resolve();
       var g = groups[Math.floor(Math.random() * groups.length)];
       var size = groupSizes[g] || 0;
       if (!size) return Promise.resolve();
-      var idx = (skipFirst && size > 1)
-        ? 1 + Math.floor(Math.random() * (size - 1))
-        : Math.floor(Math.random() * size);
+      var candidates = [];
+      for (var i = 0; i < size; i++) {
+        if (skipFirst && i === 0) continue;
+        if (exclude && exclude.group === g && exclude.index === i) continue;
+        candidates.push(i);
+      }
+      if (!candidates.length) return Promise.resolve();
+      var idx = candidates[Math.floor(Math.random() * candidates.length)];
       return model.motion(g, idx);
     }
 
-    // 待机动作循环：随机播待机组动作
+    // 待机循环：短待机随机待机动作；长时间无交互则荡秋千
+    var lastInteraction = Date.now();
     var idleTimer = null;
     function scheduleIdle(delay) { clearTimeout(idleTimer); idleTimer = setTimeout(playIdle, delay); }
     async function playIdle() {
       try {
-        await pickMotion(idle, false);
-        scheduleIdle(2200);
+        if (swingMotion && Date.now() - lastInteraction > LONG_IDLE_MS) {
+          await model.motion(swingMotion.group, swingMotion.index);
+          scheduleIdle(400); // 荡完接着荡，直到有交互打断
+        } else {
+          await pickMotion(idle, false, swingMotion);
+          scheduleIdle(2200);
+        }
       } catch (e) {
         scheduleIdle(3000);
       }
     }
+    function onInteraction() { lastInteraction = Date.now(); scheduleIdle(1200); }
     scheduleIdle(1200);
+
+    // 点脸换表情：点击坐标 → 模型局部归一化坐标 → 匹配自定义识别区 CLICK_ZONES
+    function tapAt(x, y) {
+      try {
+        var p = new PIXI.Point(x, y);
+        model.toModelPosition(p, p); // 画布坐标 → 模型局部坐标
+        var im = model.internalModel;
+        var nx = p.x / im.originalWidth;
+        var ny = p.y / im.originalHeight;
+        for (var i = 0; i < CLICK_ZONES.length; i++) {
+          var z = CLICK_ZONES[i];
+          if (Math.abs(nx - z.x) <= z.w / 2 && Math.abs(ny - z.y) <= z.h / 2) {
+            model.expression(z.expr);
+            onInteraction();
+            return true;
+          }
+        }
+      } catch (e) {
+        window.__jsErrors.push('tap: ' + ((e && e.message) || e));
+      }
+      return false;
+    }
+    // 随机换一个表情（语音输入时的反应），排除「回正」复位项
+    function randomExpression() {
+      var names = expressionNames.filter(function (n) { return !/回正|reset/i.test(n); });
+      if (!names.length) names = expressionNames;
+      if (!names.length) return;
+      model.expression(names[Math.floor(Math.random() * names.length)]);
+      onInteraction();
+    }
 
     window.__live2dReady = true;
     window.__live2dSize = { width: model.width, height: model.height };
@@ -106,12 +179,15 @@ window.addEventListener('unhandledrejection', function (e) {
       model: model,
       layout: layout,
       motion: function (g) {
+        onInteraction();
         if (g && groupSizes[g]) {
           return pickMotion([g], true);
         }
         return pickMotion(action, true);
       },
       expression: function (n) { model.expression(n); },
+      tapAt: tapAt,
+      randomExpression: randomExpression,
     };
     window.__snapshot = function () {
       try {

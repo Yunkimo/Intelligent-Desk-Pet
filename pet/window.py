@@ -142,7 +142,8 @@ class PetWindow(QWidget):
         if event.button() != Qt.MouseButton.LeftButton or self._press_pos is None:
             return
         if not self._moved:
-            self.toggle_input()
+            # 点击交给形象处理：Live2D 命中脸则换表情，未命中（或静态形象）再收起/展开输入框
+            self.avatar.tap(event.position().toPoint(), on_miss=self.toggle_input)
         self._press_pos = None
         self._moved = False
 
@@ -346,6 +347,7 @@ class PetWindow(QWidget):
     # ---------- 语音识别 ----------
     def on_mic_toggled(self, listening: bool) -> None:
         if listening:
+            self.avatar.react("voice")  # 语音输入时随机换表情
             self._start_recording()
         else:
             self._stop_recording()

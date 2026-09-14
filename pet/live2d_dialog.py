@@ -91,7 +91,14 @@ class AddModelDialog(QDialog):
             self.status.setText("⚠ 已存在同名模型，请换一个名称。")
             return
         try:
-            shutil.copytree(self._src, dest)
+            # 只跳过 VCS / 系统垃圾文件，模型所需文件全部复制
+            shutil.copytree(
+                self._src,
+                dest,
+                ignore=shutil.ignore_patterns(
+                    ".git", "__pycache__", "*.pyc", "Thumbs.db", "desktop.ini", ".DS_Store",
+                ),
+            )
         except OSError as exc:
             self.status.setText("⚠ 导入失败：" + str(exc))
             return

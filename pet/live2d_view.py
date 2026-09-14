@@ -116,3 +116,18 @@ class Live2DView(QWebEngineView):
 
     def set_expression(self, name: str) -> None:
         self.page().runJavaScript(f"window.live2d && window.live2d.expression({name!r})")
+
+    def tap_at(self, x: int, y: int, on_miss=None) -> None:
+        """点脸检测：把点击坐标交给前端做命中测试，命中则换表情，未命中回调 on_miss。"""
+        def _handle(result) -> None:
+            hit = result is True or str(result).lower() == "true"
+            if not hit and on_miss is not None:
+                on_miss()
+
+        self.page().runJavaScript(
+            f"window.live2d ? window.live2d.tapAt({x}, {y}) : false", _handle
+        )
+
+    def random_expression(self) -> None:
+        """随机换一个表情（语音输入时的反应）。"""
+        self.page().runJavaScript("window.live2d && window.live2d.randomExpression()")
