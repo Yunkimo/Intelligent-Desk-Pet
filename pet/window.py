@@ -228,7 +228,7 @@ class PetWindow(QWidget):
 
     def _apply_image(self, src: Path) -> None:
         """更换形象：用图片/动图引擎显示所选图片（必要时先从 Live2D 切过来）。"""
-        # 先释放当前形象对图片文件的占用，避免覆盖正在显示的 custom.* 时锁文件崩溃
+        # 先释放当前形象对图片文件的占用，避免覆盖正在显示的图片时锁文件崩溃
         self.avatar.clear()
         dest = normalize_image(src, self.settings.assets_dir)
         self.settings.update_frames([dest.name])
