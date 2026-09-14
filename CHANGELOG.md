@@ -2,6 +2,19 @@
 
 本项目遵循[语义化版本](https://semver.org/lang/zh-CN/)与 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/) 规范。
 
+## [1.3.0] - 2026-09-14
+
+### 新增
+
+- 支持打包成 Windows 可执行程序（PyInstaller onedir 便携式）：`打包exe.bat` 或 `python scripts/build_exe.py` 一键生成 `dist/启动桌宠/启动桌宠.exe`，双击即用、无需 Python 环境。
+- 新增 `pet/paths.py` 统一路径解析：打包运行时，素材 / 配置 / 数据自动定位到 exe 所在目录；源码运行保持原项目根目录不变。
+- 新增 `--selftest` 自检模式（完整构造 GUI 后短暂运行即退出），用于验证打包是否完整。
+
+### 变更
+
+- `main.py` 增加窗口化打包的 stdio 兜底，避免 `print` 在无控制台环境崩溃。
+- 新增开发依赖 `requirements-dev.txt`（PyInstaller）。
+
 ## [1.2.0] - 2026-09-14
 
 ### 新增
@@ -50,6 +63,7 @@
 - 人设系统与跨会话记忆。
 - 设计文档、用户手册、单元测试与 CI 流水线。
 
+[1.3.0]: https://github.com/Yunkimo/Intelligent-Desk-Pet/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Yunkimo/Intelligent-Desk-Pet/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Yunkimo/Intelligent-Desk-Pet/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Yunkimo/Intelligent-Desk-Pet/releases/tag/v1.0.0

@@ -1,17 +1,15 @@
 """Live2D 形象视图：透明 QWebEngineView，渲染 pixi-live2d-display 的昔涟模型。"""
 
-from pathlib import Path
-
 from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWidgets import QWidget
 
+from .paths import app_dir
 from .webenv import enable_local_file_access  # noqa: F401  # 供 live2d_demo.py 复用
 
 __all__ = ["Live2DView", "enable_local_file_access"]
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-LIVE2D_DIR = BASE_DIR / "assets" / "live2d"
+LIVE2D_DIR = app_dir() / "assets" / "live2d"
 
 
 class Live2DView(QWebEngineView):

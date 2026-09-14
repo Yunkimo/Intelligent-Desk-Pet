@@ -62,6 +62,28 @@ python scripts/smoke_test.py llm   # 验证 DeepSeek 连通
 python scripts/smoke_test.py tts   # 验证语音合成
 ```
 
+## 打包成 exe（可选）
+
+不想装 Python 环境时，可把桌宠打包成免安装的 Windows 可执行程序（双击即用，无需 Python / 虚拟环境）：
+
+```bash
+# 一次性安装打包工具
+pip install -r requirements-dev.txt
+# 生成 dist/启动桌宠/启动桌宠.exe（含素材、配置，便携式）
+python scripts/build_exe.py
+```
+
+或直接双击 `打包exe.bat`（自动装 PyInstaller 并打包）。
+
+产物在 `dist/启动桌宠/`，把整个目录拷到任意电脑即可运行：
+
+- `启动桌宠.exe` —— 双击启动；
+- `config.json` —— 可编辑的非敏感配置（人设 / 形象 / 音色等）；
+- `assets/` —— 宠物素材（含 Live2D 模型）；
+- `.env` —— 密钥，按 `.env.example` 自行创建后填入（不随程序打包）。
+
+> 说明：首次语音识别会自动联网下载 whisper 模型（约 100~500 MB）；打包版默认带控制台窗口以便查看进度，设置环境变量 `DESKPET_CONSOLE=0` 再打包可隐藏控制台。
+
 ## 使用说明
 
 - **拖拽**：按住宠物拖动可移动位置
@@ -88,9 +110,11 @@ python scripts/smoke_test.py tts   # 验证语音合成
 
 ```
 main.py            入口
-pet/               应用代码（config/window/avatar/sprite/bubble/llm/asr/tts/worker/memory/persona/live2d_view）
+pet/               应用代码（config/paths/window/avatar/sprite/bubble/llm/asr/tts/worker/memory/persona/live2d_view）
 assets/            宠物素材（live2d/ 为 Cubism 模型与前端运行时）
-scripts/           冒烟测试脚本
+scripts/           冒烟测试脚本、打包脚本（build_exe.py）
+deskpet.spec       PyInstaller 打包配置
+打包exe.bat        一键打包入口
 config.json        非敏感配置
 .env               密钥（不提交）
 ```

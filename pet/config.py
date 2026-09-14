@@ -6,8 +6,10 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# 项目根目录（pet/ 的上一级）
-BASE_DIR = Path(__file__).resolve().parent.parent
+from .paths import app_dir
+
+# 项目根目录（pet/ 的上一级；打包后为 exe 所在目录）
+BASE_DIR = app_dir()
 
 
 class Settings:

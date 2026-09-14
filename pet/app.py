@@ -29,4 +29,12 @@ def run() -> int:
         window.show_hint("还没配置 LLM_API_KEY 哦～在 .env 里填好再重启我就能聊天啦")
         print("警告：未配置 LLM_API_KEY，请在 .env 中填写（参考 .env.example）。")
 
+    # 自检模式：完整构造 GUI 后短暂运行即退出（打包验证用，退出码 0 表示依赖齐全）
+    if "--selftest" in sys.argv:
+        from PyQt6.QtCore import QTimer
+
+        QTimer.singleShot(2500, app.quit)
+        app.exec()
+        return 0
+
     return app.exec()
