@@ -158,7 +158,7 @@ class PetWindow(QWidget):
             return
         menu = QMenu(self)
 
-        change = menu.addAction("更换形象…")
+        change = menu.addAction("切换图片…")
         change.triggered.connect(self._choose_image)
 
         if self.avatar.supports_motion:
