@@ -60,7 +60,7 @@ window.addEventListener('unhandledrejection', function (e) {
     window.addEventListener('resize', layout);
 
     // 动作组分类：区分「带动作文件(.motion3.json)的真实动作」与「纯表情/开关」组，
-    // 避免随机动作播放到「表情#2 / 秋千#1 / 绳子开关#5」这类只会设置表情或开关的组。
+    // 避免随机动作播放到「表情#2 / 表情2#3 / 表情3#4」这类只会设置表情的组。
     function inGroup(name) { return function (g) { return (new RegExp(name, 'i')).test(g); }; }
     function groupHasFile(g) { return (motions[g] || []).some(function (m) { return !!m.File; }); }
 

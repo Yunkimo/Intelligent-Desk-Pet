@@ -16,10 +16,13 @@ def test_cyrene_entry_and_expressions():
     assert "表情回正" in cyrene["expressions"]
 
 
-def test_cyrene_hides_non_expression_items():
+def test_cyrene_swing_and_switch_removed():
+    """秋千互动（拽秋千1/2/回正）与开关（开/关）已从模型删除，只保留真实表情。"""
     cyrene = next(m for m in live2d_view.discover_models() if m["name"] == "cyrene")
-    for hidden in ("拽秋千1", "拽秋千2", "拽秋千回正", "开", "关"):
-        assert hidden not in cyrene["expressions"]
+    assert "表情回正" in cyrene["expressions"]
+    assert "开心眼" in cyrene["expressions"]
+    for removed in ("拽秋千1", "拽秋千2", "拽秋千回正", "开", "关"):
+        assert removed not in cyrene["expressions"]
 
 
 def test_model_entry_missing_returns_none():

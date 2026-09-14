@@ -57,30 +57,6 @@
           ]
         }
       ],
-      "绳子开关#5": [
-        {
-          "Name": "开/回正",
-          "Expression": "开",
-          "VarFloats": [
-            {
-              "Name": "off/on",
-              "Type": 2,
-              "Code": "assign 1"
-            }
-          ]
-        },
-        {
-          "Name": "关",
-          "Expression": "关",
-          "VarFloats": [
-            {
-              "Name": "off/on",
-              "Type": 2,
-              "Code": "assign 0"
-            }
-          ]
-        }
-      ],
       "表情3#4": [
         {
           "Name": "表情回正",
@@ -123,25 +99,6 @@
         {
           "Name": "开心眼",
           "Expression": "开心眼"
-        }
-      ],
-      "秋千#1": [
-        {
-          "Name": "拽秋千0",
-          "WrapMode": 2,
-          "Expression": "拽秋千回正"
-        },
-        {
-          "Name": "拽秋千1",
-          "WrapMode": 2,
-          "Expression": "拽秋千1",
-          "NextMtn": "秋千#1:拽秋千0"
-        },
-        {
-          "Name": "拽秋千2",
-          "WrapMode": 2,
-          "Expression": "拽秋千2",
-          "NextMtn": "秋千#1:拽秋千0"
         }
       ],
       "Tick3": [
@@ -197,7 +154,6 @@
       "Start": [
         {
           "Name": "初始化",
-          "Expression": "开",
           "VarFloats": [
             {
               "Name": "off/on",
@@ -241,41 +197,11 @@
       {
         "Name": "开心眼",
         "File": "expressions/6.exp3.json"
-      },
-      {
-        "Name": "拽秋千1",
-        "File": "expressions/7.exp3.json"
-      },
-      {
-        "Name": "拽秋千2",
-        "File": "expressions/8.exp3.json"
-      },
-      {
-        "Name": "拽秋千回正",
-        "File": "expressions/9.exp3.json"
-      },
-      {
-        "Name": "开",
-        "File": "expressions/10.exp3.json"
-      },
-      {
-        "Name": "关",
-        "File": "expressions/11.exp3.json"
       }
     ]
   },
   "Groups": [],
   "HitAreas": [
-    {
-      "Name": "左侧秋千",
-      "Id": "ArtMesh11",
-      "Motion": "秋千#1:拽秋千1"
-    },
-    {
-      "Name": "右侧秋千",
-      "Id": "ArtMesh12",
-      "Motion": "秋千#1:拽秋千2"
-    },
     {
       "Name": "表情回正花",
       "Id": "ArtMesh15",

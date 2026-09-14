@@ -29,19 +29,14 @@ def find_model_entry(folder: Path) -> Path | None:
     return None
 
 
-# 模型元数据里混入的非「表情」项（秋千互动、开关状态），从表情菜单里隐藏
-HIDDEN_EXPRESSIONS = {"拽秋千1", "拽秋千2", "拽秋千回正", "开", "关"}
-
-
 def _read_expressions(entry: Path) -> list[str]:
-    """从模型入口 json 里读取表情名列表（过滤掉非表情的交互状态项）。"""
+    """从模型入口 json 里读取表情名列表。"""
     try:
         data = json.loads(entry.read_text(encoding="utf-8"))
     except Exception:
         return []
     exprs = data.get("FileReferences", {}).get("Expressions", [])
-    names = [e.get("Name", "") for e in exprs if isinstance(e, dict) and e.get("Name")]
-    return [n for n in names if n not in HIDDEN_EXPRESSIONS]
+    return [e.get("Name", "") for e in exprs if isinstance(e, dict) and e.get("Name")]
 
 
 def discover_models() -> list[dict]:
