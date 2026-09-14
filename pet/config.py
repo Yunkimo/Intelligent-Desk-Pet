@@ -55,8 +55,8 @@ class Settings:
         self.tts_rate: str = data.get("tts_rate", "+10%")
         self.tts_pitch: str = data.get("tts_pitch", "+20Hz")
         self.enable_voice: bool = bool(data.get("enable_voice", True))
-        # 全局语音快捷键：长按开始录音、松开停止并识别（默认反引号 `）
-        self.voice_hotkey: str = data.get("voice_hotkey", "`")
+        # 全局语音快捷键：长按开始录音、松开停止并识别（默认 Ctrl+T）
+        self.voice_hotkey: str = data.get("voice_hotkey", "ctrl+t")
 
         self.max_history: int = int(data.get("max_history", 20))
         self.max_record_secs: float = float(data.get("max_record_secs", 15))

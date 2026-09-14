@@ -20,6 +20,13 @@ def test_parse_combo():
     assert main == "r"
 
 
+def test_parse_default_ctrl_t():
+    # 默认快捷键为 Ctrl+T（大小写不敏感）
+    mods, main = hotkey.parse_hotkey("ctrl+t")
+    assert mods == frozenset({"ctrl"})
+    assert main == "t"
+
+
 def test_parse_function_key():
     mods, main = hotkey.parse_hotkey("F8")
     assert mods == frozenset()
