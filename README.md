@@ -89,6 +89,7 @@ python scripts/build_exe.py
 - **拖拽**：按住宠物拖动可移动位置
 - **点击**：点宠物唤出输入框，回车发送；再点收起
 - **说话**：点输入框右侧 🎤 开始录音（变 ⏹），再点停止即转写并发送
+- **快捷键说话**：全局按住 Ctrl+T（默认）开始录音，松开自动识别并发送；右键「设置语音快捷键…」可改成任意组合键
 - **回复**：气泡流式显示，宠物同时用语音播报
 - **记忆**：对话历史保存在 `data/history.json`，重启后仍在（可在 `config.json` 关闭）
 - **右键菜单**：切换图片（选图片自动切到图片/动图引擎）/ 切换人设 / 退出
@@ -106,6 +107,7 @@ python scripts/build_exe.py
 | 音色 | `config.json` 的 `tts_voice` / `tts_rate` / `tts_pitch` |
 | 语音识别精度 | `config.json` 的 `whisper_model`（`base`/`small`/`medium`） |
 | 关闭语音播报 | `config.json` 的 `enable_voice` 设为 `false` |
+| 语音快捷键 | `config.json` 的 `voice_hotkey`（默认 `ctrl+t`），或右键「设置语音快捷键…」 |
 | LLM 模型 / 地址 | `.env` 的 `LLM_MODEL` / `LLM_BASE_URL` |
 
 ## 目录结构

@@ -37,6 +37,7 @@ for _pkg in _BIN_PKGS:
 
 # 懒加载的纯 Python 依赖，显式声明子模块以防静态分析遗漏
 hiddenimports += collect_submodules("faster_whisper")
+hiddenimports += collect_submodules("pynput")  # 全局语音快捷键（平台相关后端 _win32 等）
 
 a = Analysis(
     ["main.py"],

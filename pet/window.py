@@ -44,6 +44,7 @@ class PetWindow(QWidget):
         self._init_children()
         self._size_and_position()
         self._init_audio()
+        self._init_hotkey()
 
         # 拖拽/点击状态
         self._press_pos = None
@@ -186,6 +187,9 @@ class PetWindow(QWidget):
         persona_menu.addSeparator()
         add_act = persona_menu.addAction("添加人设…")
         add_act.triggered.connect(self._add_persona)
+
+        hotkey_act = menu.addAction("设置语音快捷键…")
+        hotkey_act.triggered.connect(self._set_voice_hotkey)
 
         quit_act = menu.addAction("退出")
         quit_act.triggered.connect(self.close)
@@ -369,11 +373,61 @@ class PetWindow(QWidget):
         self.input.set_listening(False)
         self.bubble.set_text(f"听不到声音：{msg}")
 
+    # ---------- 全局语音快捷键 ----------
+    def _init_hotkey(self) -> None:
+        """启动全局语音快捷键（长按说话）；pynput 未安装时优雅降级。"""
+        self.hotkey = None
+        try:
+            from .hotkey import HotkeyManager
+        except ImportError:
+            print("[hotkey] pynput 未安装，全局语音快捷键不可用")
+            return
+        self.hotkey = HotkeyManager(self.settings.voice_hotkey, parent=self)
+        self.hotkey.pressed.connect(
+            self._on_hotkey_pressed, Qt.ConnectionType.QueuedConnection
+        )
+        self.hotkey.released.connect(
+            self._on_hotkey_released, Qt.ConnectionType.QueuedConnection
+        )
+        self.hotkey.start()
+
+    def _on_hotkey_pressed(self) -> None:
+        """长按快捷键：开始录音。"""
+        self.input.set_listening(True)
+        self._start_recording()
+
+    def _on_hotkey_released(self) -> None:
+        """松开快捷键：停止录音并识别。"""
+        self._stop_recording()
+
+    def _set_voice_hotkey(self) -> None:
+        """弹出设置语音快捷键对话框，保存后重启监听。"""
+        from .hotkey_dialog import HotkeyDialog
+
+        dialog = HotkeyDialog(self.settings.voice_hotkey, self)
+        if not dialog.exec() or not dialog.hotkey:
+            return
+        if dialog.hotkey == self.settings.voice_hotkey:
+            return
+        self.settings.update_voice_hotkey(dialog.hotkey)
+        self._restart_hotkey()
+        self.bubble.set_text(f"语音快捷键已设为「{dialog.hotkey}」♪")
+
+    def _restart_hotkey(self) -> None:
+        """停止旧监听并按新快捷键重建。"""
+        if self.hotkey is not None:
+            self.hotkey.stop()
+            self.hotkey.deleteLater()
+            self.hotkey = None
+        self._init_hotkey()
+
     # ---------- 其它 ----------
     def show_hint(self, text: str) -> None:
         self.bubble.set_text(text)
 
     def closeEvent(self, event) -> None:  # noqa: N802
+        if self.hotkey is not None:
+            self.hotkey.stop()
         self.memory.save()
         self._cleanup_tts_tmp()
         super().closeEvent(event)

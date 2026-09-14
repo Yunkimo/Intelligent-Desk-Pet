@@ -25,6 +25,7 @@
   "tts_rate": "+10%",
   "tts_pitch": "+20Hz",
   "enable_voice": true,
+  "voice_hotkey": "ctrl+t",
   "max_history": 20,
   "max_record_secs": 15,
   "bubble_timeout_ms": 8000,

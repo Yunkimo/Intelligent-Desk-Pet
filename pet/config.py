@@ -55,6 +55,8 @@ class Settings:
         self.tts_rate: str = data.get("tts_rate", "+10%")
         self.tts_pitch: str = data.get("tts_pitch", "+20Hz")
         self.enable_voice: bool = bool(data.get("enable_voice", True))
+        # 全局语音快捷键：长按开始录音、松开停止并识别（默认 Ctrl+T）
+        self.voice_hotkey: str = data.get("voice_hotkey", "ctrl+t")
 
         self.max_history: int = int(data.get("max_history", 20))
         self.max_record_secs: float = float(data.get("max_record_secs", 15))
@@ -89,6 +91,11 @@ class Settings:
         """切换 Live2D 模型并写回 config.json，使切换在重启后仍然生效。"""
         self.live2d_model = name
         self._save_json(live2d_model=name)
+
+    def update_voice_hotkey(self, hotkey: str) -> None:
+        """更新语音快捷键并写回 config.json，使设置重启后仍然生效。"""
+        self.voice_hotkey = hotkey
+        self._save_json(voice_hotkey=hotkey)
 
     def switch_persona(self, name: str) -> bool:
         """切换到指定人设（从 personas 预设读取），写回 config.json 并返回是否成功。"""
