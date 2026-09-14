@@ -103,7 +103,7 @@ python scripts/build_exe.py
 | 宠物名字 / 人设 | `config.json` 的 `pet_name`、`persona` |
 | 宠物形象 | 图片放进 `assets/`，更新 `config.json` 的 `frames`（见 `assets/README.md`） |
 | 形象引擎 | `config.json` 的 `image_engine`：`live2d`（动态模型）或 `sprite`（图片/动图） |
-| Live2D 模型 | `config.json` 的 `live2d_model`，或右键「切换模型」/「添加 Live2D 模型…」 |
+| Live2D 模型 | `config.json` 的 `live2d_model`，或右键「切换模型」/「添加 Live2D 模型…」（存放规则见 `assets/live2d/README.md`） |
 | 音色 | `config.json` 的 `tts_voice` / `tts_rate` / `tts_pitch` |
 | 语音识别精度 | `config.json` 的 `whisper_model`（`base`/`small`/`medium`） |
 | 关闭语音播报 | `config.json` 的 `enable_voice` 设为 `false` |
