@@ -77,6 +77,11 @@ class Settings:
         self.frames = frames
         self._save_json(frames=frames)
 
+    def update_image_engine(self, engine: str) -> None:
+        """切换形象引擎并写回 config.json，使切换在重启后仍然生效。"""
+        self.image_engine = engine
+        self._save_json(image_engine=engine)
+
     def switch_persona(self, name: str) -> bool:
         """切换到指定人设（从 personas 预设读取），写回 config.json 并返回是否成功。"""
         preset = self.personas.get(name)

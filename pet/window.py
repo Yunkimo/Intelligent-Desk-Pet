@@ -147,9 +147,8 @@ class PetWindow(QWidget):
     def contextMenuEvent(self, event) -> None:  # noqa: N802
         menu = QMenu(self)
 
-        if self.avatar.supports_appearance:
-            change = menu.addAction("更换形象…")
-            change.triggered.connect(self._choose_image)
+        change = menu.addAction("更换形象…")
+        change.triggered.connect(self._choose_image)
 
         if self.avatar.supports_motion:
             poke = menu.addAction("逗一下 ♪")
@@ -158,6 +157,9 @@ class PetWindow(QWidget):
             for name in self.avatar.expressions:
                 act = expr_menu.addAction(name)
                 act.triggered.connect(lambda _checked=False, n=name: self.avatar.set_expression(n))
+        else:
+            to_live2d = menu.addAction("切换为 Live2D 动态形象")
+            to_live2d.triggered.connect(lambda: self._switch_engine("live2d"))
 
         persona_menu = menu.addMenu("切换人设")
         for name in self.settings.personas:
@@ -202,9 +204,28 @@ class PetWindow(QWidget):
         self._apply_image(Path(path))
 
     def _apply_image(self, src: Path) -> None:
+        """更换形象：用图片/动图引擎显示所选图片（必要时先从 Live2D 切过来）。"""
         dest = self._normalize_image(src)
         self.settings.update_frames([dest.name])
-        self.avatar.set_appearance(dest, self.settings.sprite_size)
+        if self.settings.image_engine != "sprite":
+            self._switch_engine("sprite")  # 会按新 frames 重建并布局
+        else:
+            self.avatar.set_appearance(dest, self.settings.sprite_size)
+            self._size_and_position()
+
+    def _switch_engine(self, engine: str) -> None:
+        """运行时切换形象引擎（图片 ↔ Live2D），重建形象控件并重新布局。"""
+        if engine == self.settings.image_engine:
+            return
+        self.settings.update_image_engine(engine)
+
+        old = self.avatar.widget
+        old.hide()
+        old.setParent(None)
+        old.deleteLater()
+
+        self.avatar = create_avatar(self.settings, parent=self)
+        self.avatar.widget.show()
         self._size_and_position()
 
     def _normalize_image(self, src: Path) -> Path:

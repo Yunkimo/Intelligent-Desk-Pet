@@ -16,7 +16,6 @@ from .sprite import PetSprite
 class Avatar(ABC):
     """形象引擎抽象基类：对外暴露统一接口，隐藏渲染实现差异。"""
 
-    supports_appearance: bool = False  # 是否支持运行时「更换形象」
     supports_motion: bool = False      # 是否支持动作 / 表情交互
     expressions: list[str] = []        # 可选表情名列表
 
@@ -40,8 +39,6 @@ class Avatar(ABC):
 
 class SpriteAvatar(Avatar):
     """图片 / 动图精灵引擎（QLabel + QPixmap / QMovie）。"""
-
-    supports_appearance = True
 
     def __init__(self, assets_dir: Path, frames: list[str], size: int,
                  parent: QWidget | None = None) -> None:
