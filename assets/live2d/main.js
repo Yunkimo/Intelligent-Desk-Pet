@@ -59,25 +59,32 @@ window.addEventListener('unhandledrejection', function (e) {
     layout();
     window.addEventListener('resize', layout);
 
-    // 动作组分类：排除口型（对口型专用）与开场/初始化，避免随机动作播放到它们
+    // 动作组分类：区分「带动作文件(.motion3.json)的真实动作」与「纯表情/开关」组，
+    // 避免随机动作播放到「表情#2 / 秋千#1 / 绳子开关#5」这类只会设置表情或开关的组。
     function inGroup(name) { return function (g) { return (new RegExp(name, 'i')).test(g); }; }
-    var mouth = motionGroups.filter(inGroup('口型|口形|mouth|lip'));
-    var start = motionGroups.filter(inGroup('^start$|开场|开始|初始化'));
-    var idle = motionGroups.filter(inGroup('idle|tick|待机'));
-    var action = motionGroups.filter(function (g) {
-      return mouth.indexOf(g) < 0 && start.indexOf(g) < 0 && idle.indexOf(g) < 0;
-    });
-    if (!idle.length) {
-      idle = motionGroups.filter(function (g) { return mouth.indexOf(g) < 0 && start.indexOf(g) < 0; });
-    }
-    if (!action.length) action = idle.slice();
+    function groupHasFile(g) { return (motions[g] || []).some(function (m) { return !!m.File; }); }
 
-    function pickMotion(groups) {
+    var fileGroups = motionGroups.filter(groupHasFile);  // 有真实动作文件的组
+    var start = motionGroups.filter(inGroup('^start$|开场|开始|初始化'));
+    var idleNamed = motionGroups.filter(inGroup('idle|tick|待机'));
+    var idle = idleNamed.length
+      ? idleNamed
+      : fileGroups.filter(function (g) { return start.indexOf(g) < 0; });
+    var action = fileGroups.filter(function (g) {
+      return idle.indexOf(g) < 0 && start.indexOf(g) < 0;
+    });
+    if (!action.length) action = fileGroups.slice();
+
+    // 随机播一组动作；skipFirst 时跳过下标 0（Live2D 惯例：第 0 个常是「回正」复位）
+    function pickMotion(groups, skipFirst) {
       if (!groups.length) return Promise.resolve();
       var g = groups[Math.floor(Math.random() * groups.length)];
       var size = groupSizes[g] || 0;
       if (!size) return Promise.resolve();
-      return model.motion(g, Math.floor(Math.random() * size));
+      var idx = (skipFirst && size > 1)
+        ? 1 + Math.floor(Math.random() * (size - 1))
+        : Math.floor(Math.random() * size);
+      return model.motion(g, idx);
     }
 
     // 待机动作循环：随机播待机组动作
@@ -85,7 +92,7 @@ window.addEventListener('unhandledrejection', function (e) {
     function scheduleIdle(delay) { clearTimeout(idleTimer); idleTimer = setTimeout(playIdle, delay); }
     async function playIdle() {
       try {
-        await pickMotion(idle);
+        await pickMotion(idle, false);
         scheduleIdle(2200);
       } catch (e) {
         scheduleIdle(3000);
@@ -100,9 +107,9 @@ window.addEventListener('unhandledrejection', function (e) {
       layout: layout,
       motion: function (g) {
         if (g && groupSizes[g]) {
-          return model.motion(g, Math.floor(Math.random() * groupSizes[g]));
+          return pickMotion([g], true);
         }
-        return pickMotion(action);
+        return pickMotion(action, true);
       },
       expression: function (n) { model.expression(n); },
     };
