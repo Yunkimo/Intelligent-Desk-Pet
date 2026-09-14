@@ -4,7 +4,6 @@ PetWindow 只依赖 Avatar 接口，不关心底层用「图片精灵」还是�
 从而能在 config.json 里一键切换，也便于日后扩展新引擎（如 Spine、视频形象）。
 """
 
-import random
 from abc import ABC, abstractmethod
 from pathlib import Path
 
@@ -62,26 +61,29 @@ class Live2DAvatar(Avatar):
     """Live2D 渲染引擎（透明 WebView + pixi-live2d-display）。"""
 
     supports_motion = True
-    expressions = ["表情回正", "开心眼", "星星眼", "闪耀", "墨镜", "问号", "圈圈眼"]
 
-    def __init__(self, width: int = 360, height: int = 360,
+    def __init__(self, model_name: str = "cyrene", width: int = 360, height: int = 360,
                  parent: QWidget | None = None) -> None:
+        self._model_name = model_name
         self._width = width
         self._height = height
         super().__init__(parent)
+
+    @property
+    def expressions(self) -> list[str]:
+        """表情名从模型元数据动态发现，覆盖基类默认空列表。"""
+        return getattr(self.widget, "expressions", [])
 
     def _build(self, parent: QWidget | None) -> QWidget:
         # 延迟导入：PyQt6-WebEngine 是可选依赖，缺失时不拖累精灵引擎
         from .live2d_view import Live2DView
 
-        return Live2DView(self._width, self._height, parent=parent)
+        return Live2DView(self._width, self._height, parent=parent, model_name=self._model_name)
 
     def react(self, event: str) -> None:
         view = self.widget
-        if event == "speak":
-            view.play_motion("动作#6", random.randint(1, 3))  # type: ignore[attr-defined]
-        elif event == "poke":
-            view.play_motion("动作#6", random.randint(1, 3))  # type: ignore[attr-defined]
+        if event in ("speak", "poke"):
+            view.play_motion()  # type: ignore[attr-defined]
 
     def set_expression(self, name: str) -> None:
         self.widget.set_expression(name)  # type: ignore[attr-defined]
@@ -91,7 +93,10 @@ def create_avatar(settings, parent: QWidget | None = None) -> Avatar:
     """根据配置构造形象引擎；Live2D 不可用时自动回退到图片精灵。"""
     if getattr(settings, "image_engine", "sprite") == "live2d":
         try:
-            return Live2DAvatar(settings.live2d_width, settings.live2d_height, parent=parent)
+            return Live2DAvatar(
+                getattr(settings, "live2d_model", "cyrene"),
+                settings.live2d_width, settings.live2d_height, parent=parent,
+            )
         except Exception as exc:  # WebEngine 未安装 / 加载失败等
             print(f"[avatar] Live2D 不可用，回退到图片精灵：{exc}")
     return SpriteAvatar(settings.assets_dir, settings.frames, settings.sprite_size, parent=parent)

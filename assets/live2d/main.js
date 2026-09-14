@@ -1,4 +1,4 @@
-/* 昔涟 Live2D：pixi-live2d-display (Cubism 4) 渲染，透明背景 + 待机动作循环。 */
+/* 通用 Live2D 渲染（Cubism 4）：模型入口从 URL 参数读取，动作组/表情从模型元数据动态发现。 */
 window.__jsErrors = [];
 window.addEventListener('error', function (e) {
   window.__jsErrors.push('error: ' + (e.message || e.type));
@@ -28,7 +28,22 @@ window.addEventListener('unhandledrejection', function (e) {
     });
     document.body.appendChild(app.view);
 
-    var model = await Live2DModel.from('cyrene/Cyrene.model3.json');
+    // 模型入口（相对路径，如 cyrene/Cyrene.model3.json），默认昔涟
+    var entry = (new URLSearchParams(location.search)).get('entry') || 'cyrene/Cyrene.model3.json';
+
+    // 从模型元数据发现动作组（供待机/随机动作），避免硬编码某个模型的动作组名
+    var motionGroups = [];
+    var groupSizes = {};
+    try {
+      var meta = await (await fetch(entry)).json();
+      var motions = (meta.FileReferences && meta.FileReferences.Motions) || {};
+      motionGroups = Object.keys(motions);
+      motionGroups.forEach(function (g) { groupSizes[g] = (motions[g] || []).length; });
+    } catch (e) {
+      window.__jsErrors.push('meta: ' + ((e && e.message) || e));
+    }
+
+    var model = await Live2DModel.from(entry);
     app.stage.addChild(model);
     model.autoInteract = true; // 眨眼 / 视线跟随 / 物理
 
@@ -44,13 +59,34 @@ window.addEventListener('unhandledrejection', function (e) {
     layout();
     window.addEventListener('resize', layout);
 
-    // 待机动作循环（模型「Tick3」组：Wink/可爱/微笑/荡秋千 待机）
+    // 动作组分类：排除口型（对口型专用）与开场/初始化，避免随机动作播放到它们
+    function inGroup(name) { return function (g) { return (new RegExp(name, 'i')).test(g); }; }
+    var mouth = motionGroups.filter(inGroup('口型|口形|mouth|lip'));
+    var start = motionGroups.filter(inGroup('^start$|开场|开始|初始化'));
+    var idle = motionGroups.filter(inGroup('idle|tick|待机'));
+    var action = motionGroups.filter(function (g) {
+      return mouth.indexOf(g) < 0 && start.indexOf(g) < 0 && idle.indexOf(g) < 0;
+    });
+    if (!idle.length) {
+      idle = motionGroups.filter(function (g) { return mouth.indexOf(g) < 0 && start.indexOf(g) < 0; });
+    }
+    if (!action.length) action = idle.slice();
+
+    function pickMotion(groups) {
+      if (!groups.length) return Promise.resolve();
+      var g = groups[Math.floor(Math.random() * groups.length)];
+      var size = groupSizes[g] || 0;
+      if (!size) return Promise.resolve();
+      return model.motion(g, Math.floor(Math.random() * size));
+    }
+
+    // 待机动作循环：随机播待机组动作
     var idleTimer = null;
     function scheduleIdle(delay) { clearTimeout(idleTimer); idleTimer = setTimeout(playIdle, delay); }
     async function playIdle() {
       try {
-        await model.motion('Tick3', Math.floor(Math.random() * 4));
-        scheduleIdle(2000);
+        await pickMotion(idle);
+        scheduleIdle(2200);
       } catch (e) {
         scheduleIdle(3000);
       }
@@ -62,7 +98,12 @@ window.addEventListener('unhandledrejection', function (e) {
     window.live2d = {
       model: model,
       layout: layout,
-      motion: function (g, i) { return model.motion(g, i); },
+      motion: function (g) {
+        if (g && groupSizes[g]) {
+          return model.motion(g, Math.floor(Math.random() * groupSizes[g]));
+        }
+        return pickMotion(action);
+      },
       expression: function (n) { model.expression(n); },
     };
     window.__snapshot = function () {
