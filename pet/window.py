@@ -117,10 +117,17 @@ class PetWindow(QWidget):
         self.bubble.move(max(0, bx), max(0, by))
 
     # ---------- 拖拽与点击 ----------
+    def _hit_avatar(self, pos) -> bool:
+        """判断给定窗口坐标是否落在形象区域内，避免透明空白区误触。"""
+        return self.avatar.widget.geometry().contains(pos)
+
     def mousePressEvent(self, event) -> None:  # noqa: N802
-        if event.button() == Qt.MouseButton.LeftButton:
-            self._press_pos = event.globalPosition().toPoint()
-            self._moved = False
+        if event.button() != Qt.MouseButton.LeftButton:
+            return
+        if not self._hit_avatar(event.position().toPoint()):
+            return
+        self._press_pos = event.globalPosition().toPoint()
+        self._moved = False
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         if self._press_pos is not None and (event.buttons() & Qt.MouseButton.LeftButton):
@@ -131,10 +138,12 @@ class PetWindow(QWidget):
                 self._press_pos = event.globalPosition().toPoint()
 
     def mouseReleaseEvent(self, event) -> None:  # noqa: N802
-        if event.button() == Qt.MouseButton.LeftButton:
-            if not self._moved:
-                self.toggle_input()
-            self._press_pos = None
+        if event.button() != Qt.MouseButton.LeftButton or self._press_pos is None:
+            return
+        if not self._moved:
+            self.toggle_input()
+        self._press_pos = None
+        self._moved = False
 
     def toggle_input(self) -> None:
         if self.input.isVisible():
@@ -145,6 +154,8 @@ class PetWindow(QWidget):
 
     # ---------- 更换形象 / 切换人设 ----------
     def contextMenuEvent(self, event) -> None:  # noqa: N802
+        if not self._hit_avatar(event.pos()):
+            return
         menu = QMenu(self)
 
         change = menu.addAction("更换形象…")
