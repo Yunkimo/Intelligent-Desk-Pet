@@ -14,6 +14,15 @@ def test_add_and_order():
     assert msgs[2] == {"role": "assistant", "content": "你好呀"}
 
 
+def test_clear_history_keeps_system():
+    m = Memory("unused.json", max_turns=10, persist=False)
+    m.set_system("你是宠物")
+    m.add_user("你好")
+    m.add_assistant("你好呀")
+    m.clear_history()
+    assert m.get_messages() == [{"role": "system", "content": "你是宠物"}]
+
+
 def test_trim_keeps_recent_turns():
     m = Memory("unused.json", max_turns=2, persist=False)
     m.set_system("sys")
