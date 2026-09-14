@@ -1,5 +1,9 @@
 # Intelligent Desk Pet · 智能桌面宠物
 
+[![CI](https://github.com/Yunkimo/Intelligent-Desk-Pet/actions/workflows/ci.yml/badge.svg)](https://github.com/Yunkimo/Intelligent-Desk-Pet/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+
 一个 Windows 桌面宠物：可拖拽、置顶、透明的可爱形象，支持 **文字聊天** 和 **双向语音对话**（你说它听、它说给你听），带人设与跨会话记忆。
 
 - **GUI**：PyQt6（无边框 / 置顶 / 透明窗口）
