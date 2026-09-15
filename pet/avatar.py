@@ -11,6 +11,9 @@ from PyQt6.QtWidgets import QWidget
 
 from .sprite import PetSprite
 
+# 「疑惑」= 圈圈眼 + 问号 的合成表情，用于无法回答/报错时；已写入 cyrene 模型的 model3.json
+CONFUSED_EXPRESSION = "疑惑"
+
 
 class Avatar(ABC):
     """形象引擎抽象基类：对外暴露统一接口，隐藏渲染实现差异。"""
@@ -37,6 +40,9 @@ class Avatar(ABC):
 
     def set_expression(self, name: str) -> None:
         """切换表情；仅 Live2D 覆写。"""
+
+    def reset_expression(self) -> None:
+        """复位表情到默认；仅 Live2D 覆写。"""
 
     def tap(self, pos, on_miss=None) -> None:
         """点击形象：Live2D 命中脸则换表情，未命中回调 on_miss；静态形象直接回调。"""
@@ -97,9 +103,14 @@ class Live2DAvatar(Avatar):
             view.play_motion()  # type: ignore[attr-defined]
         elif event == "voice":
             view.random_expression()  # type: ignore[attr-defined]
+        elif event == "confused":
+            view.set_expression(CONFUSED_EXPRESSION)  # type: ignore[attr-defined]
 
     def set_expression(self, name: str) -> None:
         self.widget.set_expression(name)  # type: ignore[attr-defined]
+
+    def reset_expression(self) -> None:
+        self.widget.reset_expression()  # type: ignore[attr-defined]
 
     def tap(self, pos, on_miss=None) -> None:
         # 窗口坐标 → WebView 坐标，交给前端做命中测试（点脸换表情）

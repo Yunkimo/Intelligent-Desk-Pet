@@ -117,6 +117,10 @@ class Live2DView(QWebEngineView):
     def set_expression(self, name: str) -> None:
         self.page().runJavaScript(f"window.live2d && window.live2d.expression({name!r})")
 
+    def reset_expression(self) -> None:
+        """复位表情到默认（清除「疑惑」等，用于成功回复后恢复正常神态）。"""
+        self.page().runJavaScript("window.live2d && window.live2d.resetExpression()")
+
     def tap_at(self, x: int, y: int, on_miss=None) -> None:
         """点脸检测：把点击坐标交给前端做命中测试，命中则换表情，未命中回调 on_miss。"""
         def _handle(result) -> None:

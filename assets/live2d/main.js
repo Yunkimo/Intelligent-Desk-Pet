@@ -197,6 +197,14 @@ var CLICK_ZONES = [
         return pickMotion(action, true);
       },
       expression: function (n) { model.expression(n); },
+      resetExpression: function () {
+        // 复位表情到默认（清除疑惑等），供成功回复后恢复正常神态
+        try {
+          var em = model.internalModel && model.internalModel.motionManager
+            && model.internalModel.motionManager.expressionManager;
+          if (em && em.resetExpression) em.resetExpression();
+        } catch (e) {}
+      },
       tapAt: tapAt,
       randomExpression: randomExpression,
     };

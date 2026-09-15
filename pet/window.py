@@ -25,6 +25,17 @@ _GAP = 8
 _INPUT_H = 36
 _BUBBLE_RESERVE = 240
 
+# 回复里出现这些词，通常表示宠物没听懂 / 需要用户澄清，此时做「疑惑」表情
+_DOUBT_KEYWORDS = (
+    "不明白", "没听懂", "没听清", "没听明白", "没明白", "没懂", "不太懂",
+    "不理解", "理解不了", "听不懂", "再说一遍", "再说一次", "能再说",
+)
+
+
+def _is_confused_reply(text: str) -> bool:
+    """判断回复是否表示「没听懂用户提问」。"""
+    return any(k in text for k in _DOUBT_KEYWORDS)
+
 
 class PetWindow(QWidget):
     def __init__(self, settings: Settings) -> None:
@@ -312,11 +323,20 @@ class PetWindow(QWidget):
         if text:
             self.memory.add_assistant(text)
             self.memory.save()
+            if _is_confused_reply(text):
+                self.avatar.react("confused")  # 没听懂用户提问
+            else:
+                self.avatar.reset_expression()  # 成功答出，恢复正常神态
             if self.settings.enable_voice:
                 self._speak(text)
+        else:
+            # 空回复 = 无法回答，露出「疑惑」（圈圈眼 + 问号）
+            self.avatar.react("confused")
+            self.bubble.set_text("嗯…这个我答不上来…")
 
     def _on_chat_error(self, msg: str) -> None:
         self.input.set_busy(False)
+        self.avatar.react("confused")
         self.bubble.set_text(f"呜…出错了：{msg}")
 
     # ---------- 语音合成 ----------

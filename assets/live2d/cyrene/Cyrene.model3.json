@@ -197,6 +197,10 @@
       {
         "Name": "开心眼",
         "File": "expressions/6.exp3.json"
+      },
+      {
+        "Name": "疑惑",
+        "File": "expressions/7.exp3.json"
       }
     ]
   },
