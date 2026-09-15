@@ -140,7 +140,16 @@ var CLICK_ZONES = [
         scheduleIdle(3000);
       }
     }
-    function onInteraction() { lastInteraction = Date.now(); scheduleIdle(1200); }
+    function onInteraction() {
+      lastInteraction = Date.now();
+      // 停止当前动作（尤其循环的荡秋千）：它不播完就永远占着动作优先级，
+      // 若不显式 stop，交互后新动作会被 reject，宠物会一直荡下去。
+      try {
+        var mm = model.internalModel && model.internalModel.motionManager;
+        if (mm && mm.stopAllMotions) mm.stopAllMotions();
+      } catch (e) {}
+      scheduleIdle(1200);
+    }
     scheduleIdle(1200);
 
     // 点脸换表情：点击坐标 → 模型局部归一化坐标 → 匹配自定义识别区 CLICK_ZONES
@@ -159,6 +168,8 @@ var CLICK_ZONES = [
             return true;
           }
         }
+        // 点空白（收起/展开输入框）也是交互：同样要停止荡秋千并重新计时
+        onInteraction();
       } catch (e) {
         window.__jsErrors.push('tap: ' + ((e && e.message) || e));
       }
