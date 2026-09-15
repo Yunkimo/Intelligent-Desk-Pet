@@ -33,6 +33,14 @@ def test_parse_function_key():
     assert main == "f8"
 
 
+def test_function_key_range():
+    # 回归：功能键映射只到 pynput 支持的 f20；f21~f24 不存在则跳过，
+    # 曾因 getattr(Key, "f21") 直接抛 AttributeError 导致 import 失败
+    assert "f1" in hotkey._SPECIAL_KEYS
+    assert "f20" in hotkey._SPECIAL_KEYS
+    assert "f21" not in hotkey._SPECIAL_KEYS
+
+
 def test_parse_empty_raises():
     with pytest.raises(ValueError):
         hotkey.parse_hotkey("")

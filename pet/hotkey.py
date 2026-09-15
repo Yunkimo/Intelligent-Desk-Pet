@@ -41,7 +41,10 @@ _SPECIAL_KEYS = {
     "caps_lock": keyboard.Key.caps_lock,
 }
 for _i in range(1, 25):
-    _SPECIAL_KEYS[f"f{_i}"] = getattr(keyboard.Key, f"f{_i}")
+    # pynput 的 Key 枚举各版本只定义到 f20，逐项 getattr 并跳过不存在的（如 f21~f24）
+    key = getattr(keyboard.Key, f"f{_i}", None)
+    if key is not None:
+        _SPECIAL_KEYS[f"f{_i}"] = key
 
 
 def parse_hotkey(hotkey: str) -> tuple[frozenset[str], str]:
