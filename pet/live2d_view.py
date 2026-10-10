@@ -49,11 +49,13 @@ def discover_models() -> list[dict]:
             continue
         entry = find_model_entry(child)
         if entry is not None:
-            models.append({
-                "name": child.name,
-                "entry": f"{child.name}/{entry.name}",
-                "expressions": _read_expressions(entry),
-            })
+            models.append(
+                {
+                    "name": child.name,
+                    "entry": f"{child.name}/{entry.name}",
+                    "expressions": _read_expressions(entry),
+                }
+            )
     return models
 
 
@@ -68,8 +70,9 @@ def model_entry(name: str) -> str | None:
 class Live2DView(QWebEngineView):
     """加载并渲染 assets/live2d/index.html 的透明 WebView，模型由 model_name 指定。"""
 
-    def __init__(self, width: int = 360, height: int = 480, parent=None,
-                 *, model_name: str = "cyrene") -> None:
+    def __init__(
+        self, width: int = 360, height: int = 480, parent=None, *, model_name: str = "cyrene"
+    ) -> None:
         super().__init__(parent)
         self.model_name = model_name
         self.expressions: list[str] = self._load_expressions()
@@ -81,9 +84,7 @@ class Live2DView(QWebEngineView):
 
         page = self.page()
         page.setBackgroundColor(Qt.GlobalColor.transparent)
-        page.settings().setAttribute(
-            page.settings().WebAttribute.ShowScrollBars, False
-        )
+        page.settings().setAttribute(page.settings().WebAttribute.ShowScrollBars, False)
 
         # 桌面宠物需由父窗口接管鼠标（拖拽/点击），故让 WebView 对鼠标事件穿透
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
@@ -123,14 +124,13 @@ class Live2DView(QWebEngineView):
 
     def tap_at(self, x: int, y: int, on_miss=None) -> None:
         """点脸检测：把点击坐标交给前端做命中测试，命中则换表情，未命中回调 on_miss。"""
+
         def _handle(result) -> None:
             hit = result is True or str(result).lower() == "true"
             if not hit and on_miss is not None:
                 on_miss()
 
-        self.page().runJavaScript(
-            f"window.live2d ? window.live2d.tapAt({x}, {y}) : false", _handle
-        )
+        self.page().runJavaScript(f"window.live2d ? window.live2d.tapAt({x}, {y}) : false", _handle)
 
     def random_expression(self) -> None:
         """随机换一个表情（语音输入时的反应）。"""

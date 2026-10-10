@@ -9,7 +9,7 @@ from PyQt6.QtCore import QThread, pyqtSignal
 
 class ChatWorker(QThread):
     chunk = pyqtSignal(str)  # 流式增量
-    done = pyqtSignal(str)   # 完整回复
+    done = pyqtSignal(str)  # 完整回复
     error = pyqtSignal(str)
 
     def __init__(self, client, messages: list[dict], parent=None) -> None:

@@ -5,8 +5,8 @@ from PyQt6.QtWidgets import QHBoxLayout, QLineEdit, QToolButton, QWidget
 
 
 class ChatInput(QWidget):
-    submitted = pyqtSignal(str)       # 文字提交
-    mic_toggled = pyqtSignal(bool)    # 麦克风开始/停止（True=开始录音）
+    submitted = pyqtSignal(str)  # 文字提交
+    mic_toggled = pyqtSignal(bool)  # 麦克风开始/停止（True=开始录音）
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)

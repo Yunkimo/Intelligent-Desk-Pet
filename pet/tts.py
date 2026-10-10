@@ -7,7 +7,9 @@ import edge_tts
 
 
 class TTSEngine:
-    def __init__(self, voice: str = "zh-CN-XiaoyouNeural", rate: str = "+10%", pitch: str = "+20Hz") -> None:
+    def __init__(
+        self, voice: str = "zh-CN-XiaoyouNeural", rate: str = "+10%", pitch: str = "+20Hz"
+    ) -> None:
         self.voice = voice
         self.rate = rate
         self.pitch = pitch

@@ -96,7 +96,12 @@ class AddModelDialog(QDialog):
                 self._src,
                 dest,
                 ignore=shutil.ignore_patterns(
-                    ".git", "__pycache__", "*.pyc", "Thumbs.db", "desktop.ini", ".DS_Store",
+                    ".git",
+                    "__pycache__",
+                    "*.pyc",
+                    "Thumbs.db",
+                    "desktop.ini",
+                    ".DS_Store",
                 ),
             )
         except OSError as exc:

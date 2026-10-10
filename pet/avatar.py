@@ -18,8 +18,8 @@ CONFUSED_EXPRESSION = "疑惑"
 class Avatar(ABC):
     """形象引擎抽象基类：对外暴露统一接口，隐藏渲染实现差异。"""
 
-    supports_motion: bool = False      # 是否支持动作 / 表情交互
-    expressions: list[str] = []        # 可选表情名列表
+    supports_motion: bool = False  # 是否支持动作 / 表情交互
+    expressions: list[str] = []  # 可选表情名列表
 
     def __init__(self, parent: QWidget | None = None) -> None:
         self.widget: QWidget = self._build(parent)
@@ -53,8 +53,9 @@ class Avatar(ABC):
 class SpriteAvatar(Avatar):
     """图片 / 动图精灵引擎（QLabel + QPixmap / QMovie）。"""
 
-    def __init__(self, assets_dir: Path, frames: list[str], size: int,
-                 parent: QWidget | None = None) -> None:
+    def __init__(
+        self, assets_dir: Path, frames: list[str], size: int, parent: QWidget | None = None
+    ) -> None:
         self._assets_dir = assets_dir
         self._frames = frames
         self._size = size
@@ -79,8 +80,13 @@ class Live2DAvatar(Avatar):
 
     supports_motion = True
 
-    def __init__(self, model_name: str = "cyrene", width: int = 360, height: int = 360,
-                 parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        model_name: str = "cyrene",
+        width: int = 360,
+        height: int = 360,
+        parent: QWidget | None = None,
+    ) -> None:
         self._model_name = model_name
         self._width = width
         self._height = height
@@ -125,7 +131,9 @@ def create_avatar(settings, parent: QWidget | None = None) -> Avatar:
         try:
             return Live2DAvatar(
                 getattr(settings, "live2d_model", "cyrene"),
-                settings.live2d_width, settings.live2d_height, parent=parent,
+                settings.live2d_width,
+                settings.live2d_height,
+                parent=parent,
             )
         except Exception as exc:  # WebEngine 未安装 / 加载失败等
             print(f"[avatar] Live2D 不可用，回退到图片精灵：{exc}")
