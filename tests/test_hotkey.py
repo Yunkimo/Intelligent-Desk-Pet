@@ -34,11 +34,16 @@ def test_parse_function_key():
 
 
 def test_function_key_range():
-    # 回归：功能键映射只到 pynput 支持的 f20；f21~f24 不存在则跳过，
-    # 曾因 getattr(Key, "f21") 直接抛 AttributeError 导致 import 失败
+    # 各平台/版本的 Key 枚举不同；存在的功能键可用，不存在的应安全跳过。
     assert "f1" in hotkey._SPECIAL_KEYS
     assert "f20" in hotkey._SPECIAL_KEYS
-    assert "f21" not in hotkey._SPECIAL_KEYS
+    for number in range(1, 25):
+        name = f"f{number}"
+        expected = getattr(keyboard.Key, name, None)
+        if expected is None:
+            assert name not in hotkey._SPECIAL_KEYS
+        else:
+            assert hotkey._to_key(name) == expected
 
 
 def test_parse_empty_raises():

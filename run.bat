@@ -8,4 +8,5 @@ if not exist .venv\Scripts\python.exe (
     if errorlevel 1 exit /b 1
 )
 
-.venv\Scripts\python main.py
+.venv\Scripts\python main.py %*
+exit /b %errorlevel%

@@ -1,7 +1,8 @@
 """会话历史：内存维护 + 本地 JSON 持久化（跨会话记忆）。"""
 
-import json
 from pathlib import Path
+
+from .storage import read_object, write_object
 
 
 class Memory:
@@ -9,6 +10,8 @@ class Memory:
 
     def __init__(self, history_path: Path, max_turns: int = 20, persist: bool = True) -> None:
         self.history_path = Path(history_path)
+        if isinstance(max_turns, bool) or not isinstance(max_turns, int) or max_turns < 1:
+            raise ValueError("max_turns 必须是正整数")
         self.max_turns = max_turns
         self.persist = persist
         self.messages: list[dict] = []
@@ -19,10 +22,17 @@ class Memory:
             self.messages = []
             return
         try:
-            data = json.loads(self.history_path.read_text(encoding="utf-8"))
+            data = read_object(self.history_path)
             msgs = data.get("messages", [])
-            self.messages = msgs if isinstance(msgs, list) else []
-        except Exception:
+            self.messages = [
+                {"role": m["role"], "content": m["content"]}
+                for m in (msgs if isinstance(msgs, list) else [])
+                if isinstance(m, dict)
+                and m.get("role") in ("user", "assistant")
+                and isinstance(m.get("content"), str)
+            ]
+            self._trim()
+        except (OSError, ValueError):
             self.messages = []
 
     def set_system(self, prompt: str) -> None:
@@ -55,8 +65,4 @@ class Memory:
     def save(self) -> None:
         if not self.persist:
             return
-        self.history_path.parent.mkdir(parents=True, exist_ok=True)
-        self.history_path.write_text(
-            json.dumps({"messages": self.messages}, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
+        write_object(self.history_path, {"messages": self.messages})

@@ -22,7 +22,7 @@ jobs:
           # xvfb/xauth：虚拟 X 服务器，供 pynput 在 import 时探测 X 连接（否则报 Bad display name）。
           sudo apt-get install -y \
             libegl1 libgl1 libxkbcommon-x11-0 libxcb-xinerama0 \
-            libdbus-1-3 libfontconfig1 libportaudio2 \
+            libdbus-1-3 libfontconfig1 libportaudio2 libpulse0 \
             xvfb xauth
 
       - name: Install Python dependencies

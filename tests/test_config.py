@@ -1,5 +1,9 @@
 """Settings 配置加载测试。"""
 
+import json
+
+import pytest
+
 from pet.config import Settings
 
 
@@ -30,3 +34,32 @@ def test_config_json_fields():
     assert s.whisper_model == "base"
     assert s.tts_voice == "zh-CN-XiaoyouNeural"
     assert s.max_history > 0
+
+
+@pytest.mark.parametrize(
+    "key,value",
+    [
+        ("max_history", 0),
+        ("max_history", 1.5),
+        ("max_record_secs", -1),
+        ("llm_timeout", "30"),
+        ("llm_timeout", float("inf")),
+        ("llm_max_retries", True),
+        ("llm_max_tokens", 0),
+        ("llm_temperature", 3),
+    ],
+)
+def test_invalid_limits_fail_with_field_name(tmp_path, monkeypatch, key, value):
+    monkeypatch.setattr("pet.config.BASE_DIR", tmp_path)
+    (tmp_path / "config.json").write_text(json.dumps({key: value}), encoding="utf-8")
+    with pytest.raises(ValueError, match=key):
+        Settings()
+
+
+def test_save_preserves_unrelated_fields(tmp_path, monkeypatch):
+    monkeypatch.setattr("pet.config.BASE_DIR", tmp_path)
+    path = tmp_path / "config.json"
+    path.write_text('{"custom": 42}', encoding="utf-8")
+    settings = Settings()
+    settings.update_voice_hotkey("ctrl+y")
+    assert json.loads(path.read_text()) == {"custom": 42, "voice_hotkey": "ctrl+y"}
