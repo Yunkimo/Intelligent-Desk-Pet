@@ -1,37 +1,43 @@
-# 信息安全设计
+# 信息安全设计与边界
 
-## 1. 密钥管理
+## 1. 数据流
 
-- API 密钥只存于 `.env`，该文件已加入 `.gitignore`，**不进入版本库**。
-- 仓库内仅提供 `.env.example` 占位模板。
-- 代码中**无任何硬编码密钥**，全部经 `Settings` 从环境变量读取。
+```mermaid
+flowchart LR
+    Mic[麦克风 PCM] --> ASR[本机 faster-whisper]
+    ASR --> Text[转写文本]
+    Input[文字输入] --> Text
+    History[本地历史] --> LLM[配置的 LLM 服务]
+    Text --> LLM
+    Persona[人设指令] --> LLM
+    LLM --> Reply[回复文本]
+    Reply --> TTS[edge-tts 在线服务]
+    Reply --> UI[本机气泡]
+```
 
-## 2. 配置与逻辑解耦
+ASR 在本机推理，**转写文本仍发送给 LLM**；最近历史与人设也随对话请求发送。开启 TTS 时回复发送给 edge-tts 服务。本地 JSON 不会作为文件自动上传，但其中消息会进入后续请求。首次 ASR 可能访问模型下载服务，不能宣称仅 LLM/TTS 两类外联。
 
-- 敏感配置（`.env`）与非敏感配置（`config.json`）分离。
-- 密钥、base_url、模型名均通过配置注入，避免硬编码泄漏与误提交。
+## 2. 控制措施与验证
 
-## 3. 隐私与数据
-
-- **语音识别本地执行**（faster-whisper 本地推理），录音与转写不离开本机。
-- 对话历史仅存于本地 `data/history.json`（已 gitignore），不自动上传。
-- 网络请求仅发生：调用所配置的 LLM `base_url`、edge-tts 合成语音。
-
-## 4. 输入处理
-
-- 用户文本与语音转写文本仅作为 LLM 消息内容传递，**不被当作代码执行**。
-- 对 LLM 返回内容仅做展示与语音合成，不执行、不拼接进任何命令。
-
-## 5. 依赖与供应链
-
-- 依赖声明于 `requirements.txt`（含版本下限），可复现安装。
-- 全部采用 PyPI 官方发布、广泛使用的库（PyQt6/openai/edge-tts/faster-whisper 等）。
-- 项目采用 MIT 许可证。
-
-## 6. 已知风险与改进方向
-
-| 风险 | 说明 | 建议 |
+| 风险 | 实现或使用要求 | 验证 |
 |---|---|---|
-| 提示注入 | LLM 可能被恶意输入诱导偏离人设 | 对人设指令加约束，限制输出长度与行为 |
-| 语音权限 | 录音需麦克风授权 | 运行时明确提示，仅在使用时开启 |
-| 第三方 API 依赖 | DeepSeek/edge-tts 可用性 | 通过 `ChatProvider` 策略可快速切换降级 |
+| 密钥进入仓库 | 忽略 .env/运行数据；示例用占位符 | check_repo.py 检查索引敏感文件及明显密钥形式 |
+| 服务错误泄漏 | LLMClient 对 UI 返回通用错误，本地保留异常链 | test_error_does_not_expose_provider_payload |
+| 覆盖写入失败 | 临时文件、flush/fsync、os.replace；失败清理 | test_failed_replace_preserves_original |
+| 历史污染 | 仅加载 user/assistant 文本；system 从当前人设建立 | test_loaded_history_filters_invalid_entries_and_system |
+| 资源等待 | 超时、有限重试、生成上限和录音时长可配置 | 配置边界与工厂参数测试 |
+| 演示误发送 | 离线不创建 SDK 客户端；关闭音频/历史持久化 | test_demo.py、test_window_demo.py |
+
+输入和回复不作为代码或命令执行。提示注入仍可能影响回复，角色提示不是安全沙箱。历史是明文；敏感对话请关闭 persist_history，并自行删除不再需要的历史。
+
+## 3. 已知限制
+
+- Live2D 使用 `--disable-web-security --allow-file-access-from-files` 兼容本地模型，扩大 WebEngine 信任边界。仅加载可信资源；后续应改为受限资源协议/请求拦截并去除全局开关。本轮未宣称修复。
+- 模型/第三方运行时有独立许可；MIT 不自动覆盖它们，见 [供应链说明](supply-chain.md)。
+- 原子替换不提供加密、跨进程事务或全部断电场景的数据保证。应用目录需可写。
+- pip-audit 仅覆盖 Python 已知漏洞数据库，不覆盖所有 JS/模型/Qt/系统组件，也不能证明无未知漏洞。
+- 索引扫描不证明历史从未泄漏；发现密钥后先撤销再清理历史。
+
+## 4. 漏洞反馈
+
+公开 Issue 只提交脱敏复现和日志，不上传 .env、完整对话或录音。泄漏密钥应在服务商端撤销并重新生成。项目没有独立安全响应团队，不承诺固定响应时间。

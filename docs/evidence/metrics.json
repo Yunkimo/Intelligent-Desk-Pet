@@ -1,0 +1,72 @@
+{
+  "generated_at": "2026-10-11T01:42:44.022524+08:00",
+  "head": "a09c3c4abb4682f893be801108fb6934b4ef05a1",
+  "baseline": "c1f0c800a2d565265264a4bc60f09054a1e0be44",
+  "working_tree_dirty": true,
+  "environment": {
+    "python": "3.13.0",
+    "os": "Windows-11-10.0.26200-SP0",
+    "cpu": "Intel64 Family 6 Model 140 Stepping 1, GenuineIntel"
+  },
+  "before": {
+    "pet_files": 22,
+    "pet_lines": 1952,
+    "test_functions": 32,
+    "provider_implementations": 1,
+    "largest_module": "pet/window.py",
+    "largest_module_lines": 456
+  },
+  "after_worktree": {
+    "pet_files": 23,
+    "pet_lines": 2127,
+    "test_functions": 47,
+    "provider_implementations": 2,
+    "largest_module": "pet/window.py",
+    "largest_module_lines": 472
+  },
+  "contributors_committed_only": {
+    "wwweiliang": {
+      "patches": 6,
+      "categories": {
+        "engineering": {
+          "added": 247,
+          "deleted": 7
+        },
+        "docs": {
+          "added": 48,
+          "deleted": 4
+        },
+        "code": {
+          "added": 474,
+          "deleted": 98
+        },
+        "test": {
+          "added": 276,
+          "deleted": 5
+        }
+      }
+    },
+    "Yunkimo": {
+      "patches": 40,
+      "categories": {
+        "code": {
+          "added": 2313,
+          "deleted": 134
+        },
+        "test": {
+          "added": 391,
+          "deleted": 9
+        },
+        "engineering": {
+          "added": 331,
+          "deleted": 31
+        },
+        "docs": {
+          "added": 696,
+          "deleted": 15
+        }
+      }
+    }
+  },
+  "method": "物理行数含注释/空行；test_functions 不展开参数化；patch 排除 merge；贡献排除 assets 与二进制，不含未提交修改；作者名按 Git mailmap 归并。"
+}

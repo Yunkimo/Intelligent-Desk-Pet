@@ -6,6 +6,8 @@
 
 一个 Windows 桌面宠物：可拖拽、置顶、透明的可爱形象（支持 **Live2D 动态模型** 与图片/GIF 两种引擎），支持 **文字聊天** 和 **双向语音对话**（你说它听、它说给你听），带人设与跨会话记忆。
 
+课程评审入口：[评分项与提交索引](docs/assessment.md) · [实测报告](docs/validation.md) · [团队 KPI](docs/team.md) · [演示视频](docs/demo.md) · [AI 使用记录](docs/ai-usage.md)。团队分工与第三方素材授权仍有待确认项，详见索引。
+
 - **GUI**：PyQt6（无边框 / 置顶 / 透明窗口）
 - **形象**：Live2D（Cubism 4）动态模型，或图片 / GIF 精灵，`config.json` 一键切换
 - **对话**：DeepSeek（OpenAI 兼容协议，可换任意国内 API）
@@ -54,6 +56,9 @@ LLM_MODEL=deepseek-chat
 ```bash
 python main.py
 ```
+
+无需密钥的演示：`python main.py --demo`；服务器/终端演示：`python scripts/demo.py`。
+离线模式使用固定规则回复，关闭语音与历史读写；`python main.py --demo --selftest` 可自动验证窗口和对话后退出。
 
 ### 4.（可选）冒烟测试
 
@@ -129,8 +134,10 @@ config.json        非敏感配置
 
 - **适配器 Adapter**：`LLMClient` / `TTSEngine` / `ASREngine` 隔离 OpenAI、edge-tts、faster-whisper 三方库
 - **策略 Strategy + 工厂 Factory**：`ChatProvider` / `create_chat_provider` 抽象 LLM 提供者；`Avatar` / `create_avatar` 抽象形象引擎（图片精灵 / Live2D），可换任意后端
-- **观察者 Observer**：Qt 信号/槽让后台线程与 UI 解耦，UI 永不阻塞
-- **外观 Facade**：`PetWindow` 对外提供极简操作
+- **观察者 Observer**：Qt 信号/槽将后台任务结果传回 UI 主线程
+- **外观 Facade**：`LLMClient` 提供统一对话和异常边界；`PetWindow` 负责窗口编排
+
+上述工厂是**简单工厂**，不是由 Creator 子类覆写创建操作的 GoF 工厂方法。当前对话策略包括在线 OpenAI 兼容实现与离线演示实现。
 
 详见 [docs/design.md](docs/design.md)（含 UML 图与重构前后量化分析）。
 
@@ -140,10 +147,12 @@ config.json        非敏感配置
 - [用户手册](docs/user-manual.md)
 - [测试文档](docs/testing.md)
 - [信息安全设计](docs/security.md)
+- [开源来源与供应链边界](docs/supply-chain.md)
+- [真实验证结果与复现](docs/validation.md)
 
 ## 开源许可证与供应链
 
-- 本项目采用 **MIT License**（见 [LICENSE](LICENSE)）。
+- 自有代码采用 **MIT License**（见 [LICENSE](LICENSE)）；依赖、Live2D 运行时与角色素材的授权另行核查，MIT 不自动覆盖整个打包程序。
 - 核心依赖（均来自 PyPI 官方发布的开源项目）：
 
 | 依赖 | 许可证 | 用途 |
@@ -167,7 +176,7 @@ config.json        非敏感配置
 | pixi-live2d-display | MIT | Live2D 渲染插件（Cubism 4） |
 | Cubism Core（live2dcubismcore.min.js） | Live2D 专有许可 | 模型运行时核心 |
 
-> ⚠️ **模型版权**：`assets/live2d/cyrene/` 为「昔涟」角色的第三方 Live2D 模型，提取自开源项目 Cyrene-Agent，**非本仓库原创**。本项目仅用于课程设计 / 学习演示；如需商用或公开分发，请自行确认角色形象版权与模型使用授权。
+> **模型来源待核实**：原说明将 `assets/live2d/cyrene/` 归于 Cyrene-Agent，但缺准确上游 URL、版本与授权凭据。课程用途不自动取得再分发权。详情及素材校验和见 [供应链说明](docs/supply-chain.md)；离线演示使用程序绘制形象。
 
 ## 常见问题
 

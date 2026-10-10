@@ -1,191 +1,171 @@
-# 设计文档：架构演进与设计模式
+# 设计开发报告：智能桌面宠物
 
-> 智能桌面宠物（Intelligent Desk Pet）—— 一个基于 PyQt6 + DeepSeek 的桌面宠物，支持文字与双向语音对话。
+> 提交索引见 [评审对照表](assessment.md)。区分 Git 可验证事实、实测结果与未完成事项，不以模式数量或代码行数代替质量。
 
-## 1. 系统概述
+## 1. 目标、范围与复杂性
 
-桌面宠物需满足以下核心需求：
+软件面向 Windows 桌面：透明置顶形象、文字聊天、语音识别与合成、跨会话记忆、人设切换、全局快捷键，以及图片/Live2D 双渲染引擎。复杂性来自 GUI 事件循环、后台线程、流式网络、音频设备、文件持久化和嵌入 Chromium 的协作。
 
-1. **桌面呈现**：无边框、置顶、透明窗口，可拖拽，形象可动。
-2. **文字对话**：接入 LLM，带人设与跨会话记忆，流式回复。
-3. **双向语音**：语音识别（听）+ 语音合成（说）。
-4. **可维护性**：配置与逻辑解耦、第三方依赖可替换、可自动化测试。
+Linux CI 验证无头运行与逻辑可移植性，不等于已部署生产服务器。项目没有嵌入式硬件实现，不宣称满足硬件开发能力展示。
 
-这些需求天然要求系统具备清晰的模块边界与可扩展结构——这正是本文档讨论「重构」与「设计模式」的出发点。
+![真实离线窗口截图](images/offline-demo.png)
 
-## 2. 架构演进：重构前后
+图 1：程序实际绘制的内置猫形象与离线回复，无需第三方模型或在线密钥。录像及复现方法见 [演示说明](demo.md)。
 
-### 2.1 重构前（初始原型）
+## 2. 可验证的演进与问题
 
-第一版原型把所有能力塞进单个 `MainWindow`，存在明显问题：
+| 阶段 | Git 依据 | 可验证事实 |
+|---|---|---|
+| 最早的引擎版本 | `5e6aaa2` | 已有配置、引擎和 ChatProvider 抽象，并不是单文件 MainWindow |
+| 双形象策略 | `48144c1` | 引入 Avatar、SpriteAvatar、Live2DAvatar，窗口通过工厂选择形象 |
+| 模型通用化 | `08c31ca` | 从模型元数据发现入口、动作和表情，减少特定模型耦合 |
+| 本轮改进前 | `c1f0c80` | 22 个 pet 模块、32 个测试函数、唯一在线对话策略；直接写 JSON |
+| 本轮改进 | [Issue #5](https://github.com/Yunkimo/Intelligent-Desk-Pet/issues/5) | 第二种对话策略、文件边界、隔离测试和请求参数注入 |
 
-```mermaid
-classDiagram
-    class MainWindow {
-        +api_key = "sk-xxxx" 硬编码
-        +base_url 硬编码
-        +history = []
-        +send_request()  阻塞网络调用
-        +play_audio()
-        +on_mouse() 拖拽+点击+聊天耦合
-    }
-    class requests
-    class pyttsx3
-    MainWindow ..> requests
-    MainWindow ..> pyttsx3
-```
+旧报告中的“单文件原型使用 requests/pyttsx3”“900 行”“14 个用例”缺少当前证据，已移除。本轮基线与原本地 `d382e0a` 文件树一致，使用远端 `c1f0c80` 作为可克隆的比较基线。
 
-**主要问题（重构动机）：**
-
-| 问题 | 后果 |
-|---|---|
-| API 密钥、路径硬编码在逻辑里 | 换环境/换模型要改代码；密钥易泄漏进版本库 |
-| 网络/语音/推理全在 UI 线程同步执行 | 界面卡死、无响应 |
-| 所有职责耦合在一个类 | 无法单独测试；改一处牵动全局 |
-| 直接依赖具体第三方库（requests/pyttsx3） | 换 provider 需改动大量业务代码 |
-
-### 2.2 重构后（分层架构）
-
-重构后，系统按职责划分为「配置 / 引擎（后端）/ 线程 / UI / 记忆」五层，UI 与后端彻底解耦：
+### 2.1 改进前 UML
 
 ```mermaid
 classDiagram
-    direction LR
-
-    class Settings {
-        +llm_api_key
-        +llm_base_url
-        +llm_model
-        +pet_name
-        +personality
-        +tts_voice
-        +whisper_model
-    }
-
+    class PetWindow
+    class Settings
+    class LLMClient
     class ChatProvider {
-        <<interface>>
+        <<abstract>>
         +stream_chat(messages, on_chunk) str
     }
-    class OpenAICompatProvider {
-        -_client
-        +stream_chat()
-    }
-    class LLMClient {
-        -provider
-        +chat(messages, on_chunk) str
-    }
-    class TTSEngine {
-        +synthesize(text) path
-    }
-    class ASREngine {
-        +transcribe(audio) str
-    }
+    class OpenAICompatProvider
     class Memory {
-        -messages
-        +add_user() +add_assistant() +get_messages() +save()
+        +save()
     }
-
-    class ChatWorker
-    class ASRWorker
-    class TTSWorker
-
-    class PetWindow {
-        -llm -asr_engine -tts_engine -memory
-        +send_text() +on_mic_toggled()
+    class Path {
+        +write_text()
     }
-    class PetSprite
-    class SpeechBubble
-    class ChatInput
-
-    ChatProvider <|.. OpenAICompatProvider
+    PetWindow --> Settings
+    PetWindow --> LLMClient
+    PetWindow --> Memory
     LLMClient o-- ChatProvider
-    PetWindow o-- LLMClient
-    PetWindow o-- Memory
-    PetWindow o-- TTSEngine
-    PetWindow o-- ASREngine
-    PetWindow *-- PetSprite
-    PetWindow *-- SpeechBubble
-    PetWindow *-- ChatInput
-    ChatWorker ..> LLMClient
-    ASRWorker ..> ASREngine
-    TTSWorker ..> TTSEngine
+    ChatProvider <|-- OpenAICompatProvider
+    Memory ..> Path : 直接覆盖 JSON
+    Settings ..> Path : 直接覆盖 JSON
 ```
 
-### 2.3 一次对话的时序（重构后）
+已有分层使局部修改成为可能，但演示依赖密钥；覆盖写入失败可能损坏旧文件；历史缺少结构过滤；单测受真实配置和平台差异影响；请求超时与重试没有显式配置。
+
+### 2.2 改进后 UML
+
+```mermaid
+classDiagram
+    class Settings {
+        +enable_demo()
+        +llm_timeout
+        +llm_max_retries
+        +llm_temperature
+        +llm_max_tokens
+    }
+    class ChatProvider {
+        <<abstract>>
+        +stream_chat(messages, on_chunk) str
+    }
+    class OpenAICompatProvider
+    class DemoChatProvider
+    class LLMClient {
+        +chat(messages, on_chunk) str
+    }
+    class ChatWorker {
+        +chunk
+        +done
+        +error
+    }
+    class PetWindow
+    class Memory
+    class storage {
+        <<module>>
+        +read_object(path) dict
+        +write_object(path, data)
+    }
+    class Avatar {
+        <<abstract>>
+        +react(event)
+    }
+    class SpriteAvatar
+    class Live2DAvatar
+    ChatProvider <|-- OpenAICompatProvider
+    ChatProvider <|-- DemoChatProvider
+    LLMClient o-- ChatProvider
+    ChatWorker --> LLMClient
+    PetWindow --> ChatWorker : 信号与槽
+    PetWindow --> Memory
+    Settings ..> storage
+    Memory ..> storage
+    PetWindow o-- Avatar
+    Avatar <|-- SpriteAvatar
+    Avatar <|-- Live2DAvatar
+```
+
+`create_chat_provider(settings)` 选择在线或离线策略，共享回调和返回值契约，窗口与 LLMClient 不判断服务商。文件操作集中到 storage 模块，调用者负责数据语义。
+
+### 2.3 时序图
 
 ```mermaid
 sequenceDiagram
-    participant U as 用户
+    actor U as 用户
     participant W as PetWindow
-    participant CW as ChatWorker
+    participant M as Memory
+    participant C as ChatWorker
+    participant L as LLMClient
     participant P as ChatProvider
-    participant T as TTSWorker
-
-    U->>W: 输入文字 / 语音转写文本
-    W->>CW: start(messages)
-    CW->>P: stream_chat()
-    loop 流式
-        P-->>CW: token
-        CW-->>W: chunk → 气泡逐字显示
+    participant S as storage
+    U->>W: 提交文字
+    W->>W: 忽略空输入或忙碌时的重复输入
+    W->>M: add_user / get_messages
+    W->>C: start
+    C->>L: chat
+    L->>P: stream_chat
+    loop 回复增量
+        P-->>C: on_chunk
+        C-->>W: chunk 信号（主线程更新）
     end
-    CW-->>W: done(完整文本)
-    W->>W: 写入 Memory 并持久化
-    W->>T: synthesize(text)
-    T-->>W: ready(mp3 路径)
-    W->>W: QMediaPlayer 播放语音
+    alt 成功
+        C-->>W: done
+        W->>M: add_assistant / save
+        opt persist_history 为 true
+            M->>S: 同目录临时文件 + os.replace
+        end
+    else 服务异常
+        L-->>C: LLMError（通用提示）
+        C-->>W: error 信号
+    end
 ```
 
-## 3. 设计模式应用
+离线 GUI 与 CLI 关闭历史读写、TTS 和录音。网络超时限制单次请求/读写等待，重试和流式响应可能延长总时长，不是整段对话的严格截止时间。
 
-重构过程中明确引入/识别了以下设计模式：
+## 3. 模式选择、动机和代价
 
-| 模式 | 类型 | 应用位置 | 收益 |
-|---|---|---|---|
-| **适配器 Adapter** | 结构型 | `LLMClient`→OpenAI SDK、`TTSEngine`→edge-tts、`ASREngine`→faster-whisper | 隔离第三方依赖，统一内部接口 |
-| **策略 Strategy** | 行为型 | `ChatProvider` / `OpenAICompatProvider` | 换 DeepSeek/通义/智谱只需新增实现，不改上层 |
-| **工厂方法 Factory Method** | 创建型 | `create_chat_provider(settings)` | 创建逻辑集中，调用方不关心具体类 |
-| **观察者 Observer** | 行为型 | Qt 信号/槽（`chunk`/`done`/`error`） | 线程与 UI 解耦，UI 永不阻塞 |
-| **外观 Facade** | 结构型 | `PetWindow` 对外暴露极简操作 | 隐藏引擎/线程/记忆的复杂性 |
-
-### 3.1 适配器（Adapter）
-
-`ASREngine` / `TTSEngine` / `LLMClient` 分别把 faster-whisper、edge-tts、OpenAI SDK 的原始 API 包装成统一、极简的内部接口，业务层只依赖抽象接口。好处：升级或替换底层库时，改动被限制在适配器内部。
-
-### 3.2 策略 + 工厂方法（Strategy + Factory Method）
-
-LLM 接入被抽象为 `ChatProvider` 接口（策略），`OpenAICompatProvider` 是当前唯一实现；`create_chat_provider()`（工厂）按 `Settings` 决定实例化哪个策略。要接入新的 LLM 服务，只需新增一个 `ChatProvider` 子类，无需改动 `LLMClient` 与 UI 代码——直接印证「可换任意国内 API」。
-
-### 3.3 观察者（Observer）
-
-`ChatWorker`/`ASRWorker`/`TTSWorker` 都是 `QThread`，通过 `pyqtSignal` 向主线程发事件（观察者模式）。这是「UI 永不被网络/录音/推理阻塞」的关键：耗时操作在后台线程执行，主线程只负责响应信号更新界面。
-
-## 4. 重构效果量化
-
-| 指标 | 重构前（原型） | 重构后 |
+| 方法 | 代码位置 | 收益与边界 |
 |---|---|---|
-| 源文件数 | 1 | 14（`pet/` 包） |
-| 职责划分 | 全部耦合于 MainWindow | 配置/引擎/线程/UI/记忆 五层 |
-| 配置硬编码 | 是 | 否（`.env` + `config.json` 分离） |
-| UI 阻塞 | 是（同步调用） | 否（QThread + 信号） |
-| 可测试性 | 无单测 | 14 个自动化用例 |
-| 第三方耦合 | 直接 import 散落 | 适配器/策略隔离 |
-| 设计模式 | 0 | 5 种 |
+| 策略 Strategy | providers.py、avatar.py | 两种对话实现证明替换能力；不代表支持任意非兼容协议 |
+| 简单工厂 Simple Factory | create_chat_provider、create_avatar | 集中选择实现；没有 Creator 子类覆写创建操作，所以不是 GoF 工厂方法 |
+| 适配器 Adapter | OpenAICompatProvider、ASREngine、TTSEngine | 第三方协议转为项目接口，限制升级影响范围 |
+| 观察者 Observer | worker.py 的 Qt 信号/槽 | 将结果派发给主线程；不能保证所有 UI 工作都无阻塞 |
+| 外观 Facade | LLMClient | 统一对话入口与异常边界；PetWindow 是窗口编排器，不因贴上模式名称就符合单一职责 |
+| 依赖注入与持久化边界 | LLMClient(provider)、storage.py | 可替换策略、注入文件故障；未为两个 JSON 文件引入复杂数据库层 |
 
-**核心代码规模**（当前）：`pet/` 约 900 行、`tests/` 约 200 行；单文件最大 `window.py` 232 行，其余模块均 <120 行，符合单一职责。
+后端引擎不依赖 Qt；Worker 负责线程桥接。Live2D HTML/JS 负责渲染，Python 负责业务与窗口。PetWindow 仍偏大，后续可在测试保障下拆分对话/音频控制器；本轮未宣称完全解耦。
 
-## 5. 目录结构
+## 4. 方法与量化效果
 
-```
-pet/
-├── config.py     配置（Settings，隔离 .env 与 config.json）
-├── providers.py  LLM 策略 + 工厂（Adapter/Strategy/Factory）
-├── llm.py        LLM 门面（Facade）
-├── asr.py        语音识别引擎（Adapter）
-├── tts.py        语音合成引擎（Adapter）
-├── worker.py     后台线程（Observer 的信号）
-├── memory.py     会话记忆（持久化）
-├── persona.py    人设提示词
-├── window.py     主窗口（Facade，编排一切）
-├── sprite.py / bubble.py / input_box.py   UI 组件
-└── app.py        应用引导
-```
+1. 从 Git 导出基线，在相同环境运行原有用例，记录失败。
+2. 为文件替换失败、无效历史、配置边界、错误隐私和跨平台功能键补测试。
+3. 增加离线策略和 CLI/GUI 自检，验证窗口、线程、信号与记忆往返。
+4. 增加格式钩子、跨平台 CI、依赖审计和只读度量，以报告校正文档。
+
+结果与环境见 [验证报告](validation.md)，小型原始证据见 [metrics.json](evidence/metrics.json) 和 [test-results.json](evidence/test-results.json)。行数增长来自新能力和格式调整，不是性能提升证据。未测量真实 LLM 首 token 延迟、ASR 错误率或 TTS 成功率，不声称这些指标改善。
+
+## 5. 限制与后续
+
+- 在线 LLM/TTS、麦克风、Live2D GPU 渲染与打包仍需人工验收。
+- Live2D WebEngine 安全开关和模型来源需进一步收紧，见安全文档。
+- 团队身份、实际工时与 KPI 待成员确认；作者统计不证明全部劳动。
+- 最终提交材料和未完成事项见 [评审对照表](assessment.md)。
