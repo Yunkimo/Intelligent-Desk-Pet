@@ -1,0 +1,32 @@
+{
+  "algorithm": "SHA-256",
+  "purpose": "Identifies files, not proof of provenance or license",
+  "files": {
+    "assets/custom.gif": "d18b32db4f4237ba12cd5d4f0b032d4621088557af425d269afbd0db60d22cad",
+    "assets/custom.webp": "9126e277bd210ead2740babaeb954dfd2813fdbd12eb5c341e93603d63145f98",
+    "assets/live2d/cubism4.min.js": "e2f8e3aabf215d473e4231e7eff140e3c74946c32330f83a16c54e1e2ef78544",
+    "assets/live2d/cyrene/Cyrene.model3.json": "b46c9f97895cce7a37665785d363c9874ee473c96eedc057c2f0023d435b1717",
+    "assets/live2d/cyrene/expressions/0.exp3.json": "aefc03bd2b3b0a788bddef2e4cb05c7a9b826384e7ec5daad034c199892b0e6a",
+    "assets/live2d/cyrene/expressions/1.exp3.json": "6fd06fbb61c3439dd0b4a46fc09d6c40949d62440c30590f584c4b21f349ab08",
+    "assets/live2d/cyrene/expressions/2.exp3.json": "8695c2b4bd937b60d60795129d0e2a817c534fd0ba1ad33448bf99da7739534e",
+    "assets/live2d/cyrene/expressions/3.exp3.json": "3d640fa60ff333de4e2c69ef550c2c7d5f58b23e033ea9b431096f71b6ea7432",
+    "assets/live2d/cyrene/expressions/4.exp3.json": "00a39715fbafc0901dbf90605b30328ab580b2b3d3147857b690902366cb3ecb",
+    "assets/live2d/cyrene/expressions/5.exp3.json": "a15430af0530798712ed0d0c69cc45e212d1418131028bbec1dac2ae2d442aa1",
+    "assets/live2d/cyrene/expressions/6.exp3.json": "3c59abf506c8f3396ff25a7d62c101a48d38b536e1d36a8449be33d2af593ad9",
+    "assets/live2d/cyrene/expressions/7.exp3.json": "b21ae1ce5b2e96e00609f223253011f07fd357d6f0c7a9a6bad0d0bf1828cca4",
+    "assets/live2d/cyrene/model.moc3": "56c57b82ac6ca06f06d8107281004ce78a9d15306f8d88a9abc9f713c99515dc",
+    "assets/live2d/cyrene/model.physics3.json": "88bf31697b6a5c0895cef64249bc6c9426a037ef12b4f35aeffe4a17cbb90347",
+    "assets/live2d/cyrene/motions/motion_6_0.motion3.json": "4fdbbcffe7aed657d38902cfab06f66520a2b2c1ac1dba0117470a3c0d21ce68",
+    "assets/live2d/cyrene/motions/motion_6_1.motion3.json": "d9f30452afbbe3123664cbf5e2ed50bdccc5f942a93d1c57a84c38ca277779cb",
+    "assets/live2d/cyrene/motions/motion_6_2.motion3.json": "e9c518644c3164f922d3023760c17f0c2039f8670679d38d1baa427a47223c47",
+    "assets/live2d/cyrene/motions/motion_6_3.motion3.json": "27f7820233e093126e846361cfea7a65a8e1b9b42cfb2c19cfbe4eabb73bcbf8",
+    "assets/live2d/cyrene/motions/Tick3_3.motion3.json": "fff19dfcc48038d87fc1242e5f5e60ab47aef3d797d51fe95c4b376181ed49a5",
+    "assets/live2d/cyrene/texture_0.png": "53f91dc7e950e94612bbfdc06e5b8fc16454e01b0d20ae86acf2a1e05db5c5b6",
+    "assets/live2d/index.html": "2af0fd4c6bc8f5150fbf6f0e3cce7823a7bf4f44fc0e6c3a1855e387b666245d",
+    "assets/live2d/live2dcubismcore.min.js": "913e10e881aa7abec8e65bbb8c2540db3fe9acf987c7537befa521f8a7f51009",
+    "assets/live2d/main.js": "efb3b3a90ef6a88ed99594fbd137e8e3c4a9f060d5e131c12f2959e846017107",
+    "assets/live2d/pixi.min.js": "b88dfa8fc79ee50b7e511c4cf5e5c459fbc1c8569a40f6e2529b46995df0d7d9",
+    "assets/live2d/README.md": "010ef876dfa28d82c3d3928be0030d47ee23c7838fcfe0729ce9b58c3facdc97",
+    "assets/README.md": "e1568154f9f663542fe864b4b81cc5057589df5a59c6653ea1dc3b7291c17dfb"
+  }
+}
