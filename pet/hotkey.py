@@ -41,7 +41,7 @@ _SPECIAL_KEYS = {
     "caps_lock": keyboard.Key.caps_lock,
 }
 for _i in range(1, 25):
-    # pynput 的 Key 枚举各版本只定义到 f20，逐项 getattr 并跳过不存在的（如 f21~f24）
+    # pynput 的 Key 枚举因平台/版本而异，跳过不存在的功能键。
     key = getattr(keyboard.Key, f"f{_i}", None)
     if key is not None:
         _SPECIAL_KEYS[f"f{_i}"] = key
@@ -87,9 +87,7 @@ class HotkeyManager(QObject):
     def start(self) -> None:
         if self._listener is not None:
             return
-        self._listener = keyboard.Listener(
-            on_press=self._on_press, on_release=self._on_release
-        )
+        self._listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)
         self._thread = threading.Thread(
             target=self._listener.run, daemon=True, name="hotkey-listener"
         )
