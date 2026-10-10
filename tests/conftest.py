@@ -15,11 +15,14 @@ from PyQt6.QtWidgets import QApplication  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def _no_dotenv(monkeypatch):
-    """测试里屏蔽真实 .env，避免本机密钥泄漏进断言。"""
+def _no_dotenv(monkeypatch, tmp_path):
+    """隔离真实密钥与可变配置，不读写开发者的设置和历史。"""
     import pet.config as cfg
 
     monkeypatch.setattr(cfg, "load_dotenv", lambda *a, **k: None)
+    monkeypatch.setattr(cfg, "BASE_DIR", tmp_path)
+    for key in ("LLM_API_KEY", "LLM_BASE_URL", "LLM_MODEL"):
+        monkeypatch.delenv(key, raising=False)
 
 
 @pytest.fixture(scope="session")

@@ -18,4 +18,5 @@ class LLMClient:
         except LLMError:
             raise
         except Exception as exc:  # noqa: BLE001 - 统一包装为 LLMError
-            raise LLMError(f"{exc}") from exc
+            # SDK 错误可能包含请求地址、响应体或认证片段，不直接显示给用户。
+            raise LLMError("对话服务暂时不可用，请检查网络和模型配置后重试。") from exc

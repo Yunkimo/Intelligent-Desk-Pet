@@ -27,8 +27,19 @@ _BUBBLE_RESERVE = 240
 
 # 回复里出现这些词，通常表示宠物没听懂 / 需要用户澄清，此时做「疑惑」表情
 _DOUBT_KEYWORDS = (
-    "不明白", "没听懂", "没听清", "没听明白", "没明白", "没懂", "不太懂",
-    "不理解", "理解不了", "听不懂", "再说一遍", "再说一次", "能再说",
+    "不明白",
+    "没听懂",
+    "没听清",
+    "没听明白",
+    "没明白",
+    "没懂",
+    "不太懂",
+    "不理解",
+    "理解不了",
+    "听不懂",
+    "再说一遍",
+    "再说一次",
+    "能再说",
 )
 
 
@@ -231,7 +242,9 @@ class PetWindow(QWidget):
 
     def _choose_image(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
-            self, "选择桌宠形象", "",
+            self,
+            "选择桌宠形象",
+            "",
             "图片 (*.png *.jpg *.jpeg *.gif *.webp *.bmp)",
         )
         if not path:
@@ -276,9 +289,7 @@ class PetWindow(QWidget):
             act = menu.addAction(m["name"])
             act.setCheckable(True)
             act.setChecked(m["name"] == self.settings.live2d_model)
-            act.triggered.connect(
-                lambda _checked=False, n=m["name"]: self._switch_live2d_model(n)
-            )
+            act.triggered.connect(lambda _checked=False, n=m["name"]: self._switch_live2d_model(n))
 
     def _switch_live2d_model(self, name: str) -> None:
         """切换到指定 Live2D 模型并重建形象。"""
@@ -303,6 +314,9 @@ class PetWindow(QWidget):
 
     # ---------- 文本/聊天 ----------
     def send_text(self, text: str) -> None:
+        text = text.strip()
+        if not text or (self.chat_worker is not None and self.chat_worker.isRunning()):
+            return
         self.memory.add_user(text)
         self.input.hide()
         self.bubble.clear()
@@ -373,6 +387,10 @@ class PetWindow(QWidget):
             self._stop_recording()
 
     def _start_recording(self) -> None:
+        if self.settings.demo_mode:
+            self.input.set_listening(False)
+            self.show_hint("离线演示仅支持文字输入，语音识别需要退出演示模式。")
+            return
         if self.asr_worker is not None and self.asr_worker.isRunning():
             return
         self.asr_worker = ASRWorker(self.asr_engine, self.settings.max_record_secs, parent=self)
@@ -400,18 +418,16 @@ class PetWindow(QWidget):
     def _init_hotkey(self) -> None:
         """启动全局语音快捷键（长按说话）；pynput 未安装时优雅降级。"""
         self.hotkey = None
+        if self.settings.demo_mode:
+            return
         try:
             from .hotkey import HotkeyManager
         except ImportError:
             print("[hotkey] pynput 未安装，全局语音快捷键不可用")
             return
         self.hotkey = HotkeyManager(self.settings.voice_hotkey, parent=self)
-        self.hotkey.pressed.connect(
-            self._on_hotkey_pressed, Qt.ConnectionType.QueuedConnection
-        )
-        self.hotkey.released.connect(
-            self._on_hotkey_released, Qt.ConnectionType.QueuedConnection
-        )
+        self.hotkey.pressed.connect(self._on_hotkey_pressed, Qt.ConnectionType.QueuedConnection)
+        self.hotkey.released.connect(self._on_hotkey_released, Qt.ConnectionType.QueuedConnection)
         self.hotkey.start()
 
     def _on_hotkey_pressed(self) -> None:

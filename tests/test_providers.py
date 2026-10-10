@@ -61,3 +61,56 @@ def test_factory_returns_openai_compat_provider():
 
     provider = create_chat_provider(Settings())
     assert isinstance(provider, OpenAICompatProvider)
+
+
+def test_error_does_not_expose_provider_payload():
+    class FailingProvider:
+        def stream_chat(self, messages, on_chunk=None):
+            raise RuntimeError("private-user-text and secret-token")
+
+    with pytest.raises(LLMError) as error:
+        LLMClient(FailingProvider()).chat([])
+    assert "private-user-text" not in str(error.value)
+    assert "secret-token" not in str(error.value)
+
+
+def test_stream_closed_when_callback_fails(monkeypatch):
+    class Stream:
+        closed = False
+
+        def __iter__(self):
+            yield _Chunk("hi")
+
+        def close(self):
+            self.closed = True
+
+    stream = Stream()
+    provider = OpenAICompatProvider("sk", "https://x", "m")
+    client = _FakeClient([])
+    monkeypatch.setattr(client.chat.completions, "create", lambda **kwargs: stream)
+    provider._client = client
+
+    def fail(text):
+        raise RuntimeError("callback failed")
+
+    with pytest.raises(RuntimeError):
+        provider.stream_chat([], fail)
+    assert stream.closed
+
+
+def test_factory_passes_request_limits(monkeypatch):
+    from pet.config import Settings
+
+    settings = Settings()
+    settings.llm_timeout = 7
+    settings.llm_max_retries = 0
+    provider = create_chat_provider(settings)
+    seen = {}
+
+    def create_client(**kwargs):
+        seen.update(kwargs)
+        return _FakeClient([])
+
+    monkeypatch.setattr("pet.providers.OpenAI", create_client)
+    assert provider.stream_chat([]) == ""
+    assert seen["timeout"] == 7 and seen["max_retries"] == 0
