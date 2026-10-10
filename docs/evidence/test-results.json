@@ -1,5 +1,5 @@
 {
-  "measured_on": "2026-10-10",
+  "measured_on": "2026-10-11",
   "baseline_ref": "c1f0c80",
   "baseline_tree_equal_to": "d382e0a",
   "before": {
@@ -10,11 +10,11 @@
     "time": "2.224"
   },
   "after": {
-    "tests": "65",
+    "tests": "66",
     "failures": "0",
     "errors": "0",
     "skipped": "0",
-    "time": "4.961"
+    "time": "6.191"
   },
   "coverage": {
     "covered_lines": 754,
@@ -266,5 +266,6 @@
     "Offline automated tests only",
     "Live2D GPU, real microphone and network services not verified",
     "Baseline and current suites differ; elapsed times are not a performance comparison"
-  ]
+  ],
+  "after_code_ref": "5b978e14aafd595998ee570709a92b653b8b95ba"
 }
