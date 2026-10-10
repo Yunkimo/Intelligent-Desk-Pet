@@ -10,8 +10,14 @@ from PyQt6.QtWidgets import QLabel
 class PetSprite(QLabel):
     _ANIMATED_EXTS = {".gif", ".webp"}
 
-    def __init__(self, assets_dir: Path, frame_names: list[str], target_size: int,
-                 interval_ms: int = 450, parent=None) -> None:
+    def __init__(
+        self,
+        assets_dir: Path,
+        frame_names: list[str],
+        target_size: int,
+        interval_ms: int = 450,
+        parent=None,
+    ) -> None:
         super().__init__(parent)
         self.target_size = target_size
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -98,7 +104,8 @@ class PetSprite(QLabel):
                 continue
             frames.append(
                 pm.scaled(
-                    size, size,
+                    size,
+                    size,
                     Qt.AspectRatioMode.KeepAspectRatio,
                     Qt.TransformationMode.SmoothTransformation,
                 )
@@ -125,16 +132,20 @@ class PetSprite(QLabel):
         # 耳朵（两个三角形）
         p.setPen(outline)
         p.setBrush(ear)
-        left_ear = QPolygonF([
-            QPointF(s * 0.22, s * 0.38),
-            QPointF(s * 0.14, s * 0.10),
-            QPointF(s * 0.40, s * 0.24),
-        ])
-        right_ear = QPolygonF([
-            QPointF(s * 0.78, s * 0.38),
-            QPointF(s * 0.86, s * 0.10),
-            QPointF(s * 0.60, s * 0.24),
-        ])
+        left_ear = QPolygonF(
+            [
+                QPointF(s * 0.22, s * 0.38),
+                QPointF(s * 0.14, s * 0.10),
+                QPointF(s * 0.40, s * 0.24),
+            ]
+        )
+        right_ear = QPolygonF(
+            [
+                QPointF(s * 0.78, s * 0.38),
+                QPointF(s * 0.86, s * 0.10),
+                QPointF(s * 0.60, s * 0.24),
+            ]
+        )
         p.drawPolygon(left_ear)
         p.drawPolygon(right_ear)
 
