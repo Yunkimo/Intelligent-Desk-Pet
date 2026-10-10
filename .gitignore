@@ -21,3 +21,21 @@ tmp/
 build/
 dist/
 build.log
+
+# 本地质量报告、缓存与编辑器文件
+*.log
+*.tmp
+.pytest_cache/
+.ruff_cache/
+.coverage*
+coverage.xml
+htmlcov/
+reports/
+.idea/
+.vscode/
+.env.*
+!.env.example
+*.exe
+*.zip
+*.mp4
+!docs/images/offline-demo.mp4
