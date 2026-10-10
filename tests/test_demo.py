@@ -1,5 +1,10 @@
 """离线演示必须走真实工厂/门面/记忆链路，禁止创建在线客户端。"""
 
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 from pet.config import Settings
 from pet.llm import LLMClient
 from pet.memory import Memory
@@ -31,3 +36,16 @@ def test_offline_chat_does_not_create_network_client(tmp_path, monkeypatch):
     assert "".join(chunks) == answer
     assert len(memory.get_messages()) == 3
     assert not path.exists()
+
+
+def test_cli_outputs_utf8_even_with_legacy_console_encoding():
+    root = Path(__file__).resolve().parent.parent
+    result = subprocess.run(
+        [sys.executable, "scripts/demo.py"],
+        cwd=root,
+        env={**os.environ, "PYTHONIOENCODING": "cp1252"},
+        capture_output=True,
+        check=True,
+        timeout=20,
+    )
+    assert "离线演示" in result.stdout.decode("utf-8")

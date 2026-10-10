@@ -13,6 +13,10 @@ from pet.providers import create_chat_provider  # noqa: E402
 
 
 def main() -> int:
+    # Windows 英文环境重定向输出时可能默认 cp1252，统一为 UTF-8。
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     settings = Settings()
     settings.enable_demo()
     memory = Memory(settings.history_path, persist=False)
