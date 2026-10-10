@@ -1,0 +1,2 @@
+# Optional video recording tools; install runtime dependencies first.
+imageio-ffmpeg>=0.6
