@@ -1,5 +1,9 @@
 """Memory 会话历史测试。"""
 
+import json
+
+import pytest
+
 from pet.memory import Memory
 
 
@@ -46,6 +50,40 @@ def test_persist_roundtrip(tmp_path):
     m.save()
 
     m2 = Memory(path, persist=True)
+    m2.set_system("sys")  # 系统指令从当前人设重新建立，不信任磁盘中的 system 消息
     msgs = m2.get_messages()
     assert msgs[1]["content"] == "hi"
     assert msgs[2]["content"] == "hello"
+
+
+def test_loaded_history_filters_invalid_entries_and_system(tmp_path):
+    path = tmp_path / "history.json"
+    path.write_text(
+        json.dumps(
+            {
+                "messages": [
+                    None,
+                    "bad",
+                    {"role": "system", "content": "untrusted"},
+                    {"role": "tool", "content": "bad"},
+                    {"role": "user", "content": 5},
+                    {"role": "user", "content": "old"},
+                    {"role": "assistant", "content": "old"},
+                    {"role": "user", "content": "new"},
+                    {"role": "assistant", "content": "new"},
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    memory = Memory(path, max_turns=1)
+    assert memory.get_messages() == [
+        {"role": "user", "content": "new"},
+        {"role": "assistant", "content": "new"},
+    ]
+
+
+@pytest.mark.parametrize("turns", [0, -1, True, 1.5])
+def test_invalid_history_limit(turns):
+    with pytest.raises(ValueError):
+        Memory("unused.json", max_turns=turns, persist=False)
